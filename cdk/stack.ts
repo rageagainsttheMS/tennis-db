@@ -16,4 +16,9 @@ class NextjsStack extends Stack {
 }
 
 const app = new App();
-new NextjsStack(app, 'nextjs');
+new NextjsStack(app, 'nextjs', {
+   env: {
+    account: process.env.CDK_DEFAULT_ACCOUNT, 
+    region: process.env.CDK_DEFAULT_REGION
+  }
+});

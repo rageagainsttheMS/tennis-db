@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy": "next build && serverless deploy"
+    "deploy": "cdk deploy"
   },
   "dependencies": {
     "@aws-cdk/aws-cloudfront": "^1.204.0",
@@ -27,6 +27,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.3",
     "typescript": "^5"
   }
 }

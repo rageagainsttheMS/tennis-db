@@ -1,6 +1,7 @@
 {
-  "app": "npx ts-node --prefer-ts-exts lib/stack.ts",
-  "context": {
-    "@aws-cdk/core:newStyleStackSynthesis": true
+  "app": "npx tsx cdk/stack.ts",
+  "watch": {
+    "include": ["src/**"],
+    "exclude": ["node_modules", "cdk.out"]
   }
 }
