@@ -1,14 +1,11 @@
-# Welcome to your CDK TypeScript project
+# Welcome to TennisDB!
 
-This is a blank project for CDK development with TypeScript.
+TennisDB is a hobby project dedicated to showing in-depth tennis stats 
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+TennisDB project has the below architecture:
 
-## Useful commands
-
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `npx cdk deploy`  deploy this stack to your default AWS account/region
-* `npx cdk diff`    compare deployed stack with current state
-* `npx cdk synth`   emits the synthesized CloudFormation template
+- Modern NextJS with TypeScript and TailWindCSS
+- Neon DB with Prisma ORM
+- Deployment using AWS Cloud Development Kit (CDK) for NextJS (cdk-nextJs)
+- Deployed project is utilising S3, Lambda functions and CloudFront
+- Using Github Actions for CI/CD (auto deploy on push to main branch)
