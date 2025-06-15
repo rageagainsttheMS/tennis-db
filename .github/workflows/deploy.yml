@@ -53,7 +53,7 @@ jobs:
 
       - name: CDK Deploy
         run: |
-          cdk deploy
+          cdk deploy --require-approval never --all
         env:
           CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
           CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}
