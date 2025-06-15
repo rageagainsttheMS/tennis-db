@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Match" ALTER COLUMN "winner_seed" SET DATA TYPE TEXT,
+ALTER COLUMN "loser_seed" SET DATA TYPE TEXT;

@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "Match" ALTER COLUMN "winner_hand" DROP NOT NULL,
+ALTER COLUMN "winner_ioc" DROP NOT NULL,
+ALTER COLUMN "winner_age" DROP NOT NULL,
+ALTER COLUMN "loser_name" DROP NOT NULL,
+ALTER COLUMN "loser_hand" DROP NOT NULL,
+ALTER COLUMN "loser_ioc" DROP NOT NULL,
+ALTER COLUMN "loser_age" DROP NOT NULL;

@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Match {
+  id Int @id @default(autoincrement())
+  tourneyId        String   @map("tourney_id")
+  tourneyName      String  @map("tourney_name")
+  surface           String
+  drawSize         String   @map("draw_size")
+  tourneyLevel     String @map("tourney_level")
+  tourneyDate      String @map("tourney_date")
+  matchNumber      Int? @map("match_num")
+
+  winnerId         String? @map("winner_id")
+  winnerSeed       String?    @map("winner_seed")
+  winnerEntry      String?  @map("winner_entry")
+  winnerName       String  @map("winner_name")
+  winnerHand       String?  @map("winner_hand")
+  winnerHeight         Int?     @map("winner_ht")
+  winnerCountry        String?  @map("winner_ioc")
+  winnerAge        Float?  @map("winner_age")
+  winnerRank       Int?     @map("winner_rank")
+  winnerRankPoints Int?    @map("winner_rank_points")
+
+  loserId          String? @map("loser_id")
+  loserSeed        String?    @map("loser_seed")
+  loserEntry       String?  @map("loser_entry")
+  loserName        String?  @map("loser_name")
+  loserHand        String? @map("loser_hand")
+  loserHeight      Int?    @map("loser_ht")
+  loserCountry     String? @map("loser_ioc")
+  loserAge        Float? @map("loser_age")
+  loserRank        Int?    @map("loser_rank")
+  loserRankPoints Int?     @map("loser_rank_points")
+
+  score             String?
+  bestOf            Int @map("best_of")
+  round             String
+  minutes           Int?
+
+  winnerAces          Int? @map("w_ace")
+  winnerDoubleFaults  Int? @map("w_df")
+  winnerServicePointsPlayed           Int? @map("w_svpt")
+  winner1stServeIn           Int?  @map("w_1stIn")
+  winner1stServeWon          Int? @map("w_1stWon")
+  winner2ndServeWon          Int?  @map("w_2ndWon")
+  winnerServeGames           Int? @map("w_SvGms")
+  winnerBreakPointSaved        Int?  @map("w_bpSaved")
+  winnerBreakPointFaced         Int?  @map("w_bpFaced")
+
+  loserAces             Int? @map("l_ace")
+  loserDoubleFaults              Int? @map("l_df")
+  loserServicePointsPlayed            Int? @map("l_svpt")
+  loser1stServeIn           Int? @map("l_1stIn")
+  loser1stServeWon          Int?  @map("l_1stWon")
+  loser2ndServeWon          Int? @map("l_2ndWon")
+  loserServeGames           Int? @map("l_SvGms")
+  loserBreakPointSaved         Int? @map("l_bpSaved")
+  loserBreakPointFaced         Int? @map("l_bpFaced")
+}
