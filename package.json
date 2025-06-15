@@ -13,6 +13,7 @@
     "@aws-cdk/aws-cloudfront": "^1.204.0",
     "@aws-cdk/aws-s3": "^1.204.0",
     "@aws-cdk/aws-s3-deployment": "^1.204.0",
+    "cdk-fck-nat": "^1.6.4",
     "cdk-nextjs": "^0.4.2",
     "next": "15.3.3",
     "react": "^19.0.0",
