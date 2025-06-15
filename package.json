@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -13,14 +13,19 @@
     "@aws-cdk/aws-cloudfront": "^1.204.0",
     "@aws-cdk/aws-s3": "^1.204.0",
     "@aws-cdk/aws-s3-deployment": "^1.204.0",
+    "@chakra-ui/react": "^3.21.0",
+    "@emotion/react": "^11.14.0",
     "@neondatabase/serverless": "^1.0.1",
     "@prisma/adapter-neon": "^6.9.0",
     "@prisma/extension-accelerate": "^2.0.1",
     "cdk-fck-nat": "^1.6.4",
     "cdk-nextjs": "^0.4.2",
     "next": "15.3.3",
+    "next-auth": "^5.0.0-beta.28",
+    "next-themes": "^0.4.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-icons": "^5.5.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {
