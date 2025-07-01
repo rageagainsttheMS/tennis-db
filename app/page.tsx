@@ -1,11 +1,14 @@
-import { getMatchTest } from "@/lib/actions/match.actions";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 
 
 export default async function Home() {
 
-  const result = await getMatchTest();
-  console.log(JSON.stringify(result));
+  const session = await auth();
+  if(!session){
+    redirect('/signIn');
+  }
 
   return (
     <></>
