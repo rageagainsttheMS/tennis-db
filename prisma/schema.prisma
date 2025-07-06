@@ -14,6 +14,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Hand {
+  LEFT
+  RIGHT
+}
+
+enum Backhand {
+  TWOHANDED
+  ONEHANDED
+}
+
+enum TournamentType {
+  GS
+  ATPM1000
+  ATP500
+  ATP250
+  DavisCup
+  LaverCup
+}
+
+model Player {
+    id String @id @default(uuid())
+    name String
+    hand  Hand
+    backHand Backhand
+    country  String
+    age String
+    rank Int
+    profile String
+    image String
+}
+
+model Tournament {
+  id String @id @default(uuid())
+  name String
+  tournamentType TournamentType
+  image String
+  drawSize Int
+}
+
 model Match {
   id Int @id @default(autoincrement())
   tourneyId        String   @map("tourney_id")
