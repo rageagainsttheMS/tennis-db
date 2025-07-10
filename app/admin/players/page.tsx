@@ -1,16 +1,9 @@
 import { auth } from "@/auth";
 import { ROUTES } from "@/types/constants";
-import { Box } from "@chakra-ui/react";
-import { Table } from "@chakra-ui/react";
+import { Box, Button, Flex, Table } from "@chakra-ui/react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-
-const testPlayers = [
-  { name: "Novak Djokovic", age: 37, ranking: 1 },
-  { name: "Carlos Alcaraz", age: 22, ranking: 2 },
-  { name: "Jannik Sinner", age: 23, ranking: 3 },
-  { name: "Daniil Medvedev", age: 28, ranking: 4 },
-  { name: "Alexander Zverev", age: 27, ranking: 5 },
-];
+import { getPlayers } from "@/lib/actions/player.actions";
 
 const AdminPlayersPage = async () => {
   const session = await auth();
@@ -18,8 +11,16 @@ const AdminPlayersPage = async () => {
     redirect(ROUTES.SIGNIN);
   }
 
+  const players = await getPlayers();
   return (
     <Box mx="auto" ml={10} mt={8}>
+      <Flex justify="flex-end" mx={4}>
+        <Link href={ROUTES.PLAYERCREATE} passHref>
+          <Button colorScheme="green" as="a" size="sm">
+            Create Player
+          </Button>
+        </Link>
+      </Flex>
       <Table.Root>
         <Table.Header>
           <Table.Row>
@@ -29,11 +30,11 @@ const AdminPlayersPage = async () => {
           </Table.Row>
         </Table.Header>
         <Table.Body>
-          {testPlayers.map((player, idx) => (
+          {players.map((player, idx) => (
             <Table.Row key={idx}>
               <Table.Cell>{player.name}</Table.Cell>
               <Table.Cell>{player.age}</Table.Cell>
-              <Table.Cell>{player.ranking}</Table.Cell>
+              <Table.Cell>{player.rank}</Table.Cell>
             </Table.Row>
           ))}
         </Table.Body>
