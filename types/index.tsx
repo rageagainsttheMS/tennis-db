@@ -11,6 +11,10 @@ export interface Player {
   image: string;
 }
 
+export interface PlayerWithID extends Player {
+  id: string;
+}
+
 export interface ActionResult {
     success : boolean,
     message : string,

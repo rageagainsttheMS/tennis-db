@@ -39,6 +39,8 @@ model Player {
     hand  Hand
     backHand Backhand
     country  String
+    birthPlace String
+    turnedPro String
     age String
     rank Int
     profile String

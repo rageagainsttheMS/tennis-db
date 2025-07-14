@@ -35,3 +35,38 @@ export async function getPlayers() {
     const players = await prisma.player.findMany();
     return players;
 }
+
+export async function getPlayerById(id: string) {
+  const player = await prisma.player.findUnique({
+    where: { id },
+  });
+  return player;
+}
+
+export async function updatePlayer(id: string, oPayload: Player) {
+  try {
+    oPayload.rank = parseInt(oPayload.rank.toString(), 10);
+    const { hand, backHand, ...rest } = oPayload;
+    const updatedPlayer = await prisma.player.update({
+      where: { id },
+      data: {
+        ...rest,
+        hand: hand as Hand,
+        backHand: backHand as Backhand,
+      },
+    });
+    const result: ActionResult = {
+      message: `Player ${updatedPlayer?.name} updated successfully`,
+      success: true,
+      id: updatedPlayer.id,
+    };
+    return result;
+  } catch (error) {
+    console.log(error);
+    const result: ActionResult = {
+      message: JSON.stringify(error),
+      success: false,
+    };
+    return result;
+  }
+}

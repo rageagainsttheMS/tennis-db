@@ -66,7 +66,6 @@ export default function CreatePlayerPage() {
           e.preventDefault();
           startTransition(async () => {
             const result = await createPlayer(form);
-            console.log(result.message);
             if (!result.success) {
               toaster.create({
                 title: "Error",

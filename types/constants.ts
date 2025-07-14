@@ -2,7 +2,8 @@ export const ROUTES = {
     PLAYERADMIN : "/admin/players",
     PLAYERCREATE: "/admin/players/create",
     SIGNIN : "/signIn",
-    TOURNADMIN : "/admin/tournaments"
+    TOURNADMIN : "/admin/tournaments",
+    PLAYERPROFILE: "/profile"
 }
 
 export const HIGHLIGHT_BORDER = 'blackAlpha.500';
