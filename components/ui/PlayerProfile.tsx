@@ -2,7 +2,7 @@
 
 import { updatePlayer } from "@/lib/actions/player.actions";
 import { formatBackhand, formatHand } from "@/lib/utils/utils";
-import { PlayerWithID } from "@/types";
+import { Match, PlayerWithID } from "@/types";
 import { ADMINROLE, PLAYER_BACKHAND, PLAYER_HAND } from "@/types/constants";
 import {
   Box,
@@ -23,7 +23,7 @@ import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { toaster } from "./toaster";
 
-const PlayerProfile = ({player} : {player : PlayerWithID}) => {
+const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Match[]}) => {
   const { data: session } = useSession();
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,6 +36,8 @@ const PlayerProfile = ({player} : {player : PlayerWithID}) => {
     profile: player.profile,
     image : player.image || "",
   });
+
+  console.log(matches);
 
   const isAdmin = session?.user?.role === ADMINROLE;
 

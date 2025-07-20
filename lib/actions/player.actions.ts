@@ -6,10 +6,26 @@ import { Backhand, Hand } from "@prisma/client";
 export async function createPlayer(oPayload: Player) {
   try {
     oPayload.rank = parseInt(oPayload.rank.toString(), 10);
+    // Look up winnerId from Match table by winnerName
+    const match = await prisma.match.findFirst({
+      where: { winnerName: oPayload.name },
+      select: { winnerId: true },
+    });
+
+    if(!match) {
+      return {
+        message: `No matches found for player ${oPayload.name}`,
+        success: false,
+      };
+    }
+
+    // Set playerMatchId to winnerId if found, otherwise keep existing or generate a new one
+    const playerMatchId = match?.winnerId || oPayload.playerMatchId || crypto.randomUUID();
     const { hand, backHand, ...rest } = oPayload;
     const newPlayer = await prisma.player.create({
       data: {
         ...rest,
+        playerMatchId,
         hand: hand as Hand,
         backHand: backHand as Backhand,
       },
@@ -28,7 +44,19 @@ export async function createPlayer(oPayload: Player) {
     };
     return result;
   }
-  
+}
+
+// Get all matches for a player by playerMatchId (matches where player is winner or loser)
+export async function getPlayerMatches(playerMatchId: string) {
+    const matches = await prisma.match.findMany({
+      where: {
+        OR: [
+          { winnerId: playerMatchId },
+          { loserId: playerMatchId },
+        ],
+      },
+    });
+    return matches;
 }
 
 export async function getPlayers() {

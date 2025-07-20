@@ -31,6 +31,9 @@ export default function CreatePlayerPage() {
     rank: 0,
     profile: "",
     image: "",
+    birthPlace: "",
+    turnedPro: "",
+    playerMatchId: "",
   });
   const router = useRouter();
 

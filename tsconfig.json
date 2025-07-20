@@ -33,7 +33,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-  ],
+, "db/importMatches.js"  ],
   "exclude": [
     "node_modules"
   ]

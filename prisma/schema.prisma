@@ -35,6 +35,7 @@ enum TournamentType {
 
 model Player {
     id String @id @default(uuid())
+    playerMatchId String @unique
     name String
     hand  Hand
     backHand Backhand
@@ -57,7 +58,7 @@ model Tournament {
 
 model Match {
   id Int @id @default(autoincrement())
-  tourneyId        String   @map("tourney_id")
+  tourneyId        String?   @map("tourney_id")
   tourneyName      String  @map("tourney_name")
   surface           String
   drawSize         String   @map("draw_size")
