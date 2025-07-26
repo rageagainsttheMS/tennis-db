@@ -37,6 +37,7 @@ model Player {
     id String @id @default(uuid())
     playerMatchId String @unique
     name String
+    nickName String?
     hand  Hand
     backHand Backhand
     country  String

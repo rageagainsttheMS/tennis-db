@@ -19,6 +19,7 @@ import { Toaster, toaster } from "@/components/ui/toaster";
 import { useRouter } from "next/navigation";
 
 export default function CreatePlayerPage() {
+
   const HAND_DEFAULT = "RIGHT";
   const BH_DEFAULT = "TWOHANDED";
 

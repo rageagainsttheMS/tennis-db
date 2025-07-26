@@ -2,6 +2,7 @@
 // Player type based on Prisma Player model
 export interface Player {
   name: string;
+  nickName?: string | null;
   hand: string;
   backHand: string;
   country: string;
@@ -11,67 +12,74 @@ export interface Player {
   rank: number;
   profile: string;
   image: string;
-  playerMatchId?: string;
+  playerMatchId?: string | null;
 }
 
 export interface Match {
   id: number;
-  tourneyId?: string;
+  tourneyId: string | null;
   tourneyName: string;
   surface: string;
   drawSize: string;
   tourneyLevel: string;
   tourneyDate: string;
-  matchNumber?: number;
+  matchNumber: number | null;
 
-  winnerId?: string;
-  winnerSeed?: string;
-  winnerEntry?: string;
+  winnerId: string | null;
+  winnerSeed: string | null;
+  winnerEntry: string | null;
   winnerName: string;
-  winnerHand?: string;
-  winnerHeight?: number;
-  winnerCountry?: string;
-  winnerAge?: number;
-  winnerRank?: number;
-  winnerRankPoints?: number;
+  winnerHand: string | null;
+  winnerHeight: number | null;
+  winnerCountry: string | null;
+  winnerAge: number | null;
+  winnerRank: number | null;
+  winnerRankPoints: number | null;
 
-  loserId?: string;
-  loserSeed?: string;
-  loserEntry?: string;
-  loserName?: string;
-  loserHand?: string;
-  loserHeight?: number;
-  loserCountry?: string;
-  loserAge?: number;
-  loserRank?: number;
-  loserRankPoints?: number;
+  loserId: string | null;
+  loserSeed: string | null;
+  loserEntry: string | null;
+  loserName: string | null;
+  loserHand: string | null;
+  loserHeight: number | null;
+  loserCountry: string | null;
+  loserAge: number | null;
+  loserRank: number | null;
+  loserRankPoints: number | null;
 
-  score?: string;
+  score: string | null;
   bestOf: number;
   round: string;
-  minutes?: number;
+  minutes: number | null;
 
-  winnerAces?: number;
-  winnerDoubleFaults?: number;
-  winnerServicePointsPlayed?: number;
-  winner1stServeIn?: number;
-  winner1stServeWon?: number;
-  winner2ndServeWon?: number;
-  winnerServeGames?: number;
-  winnerBreakPointSaved?: number;
-  winnerBreakPointFaced?: number;
+  winnerAces: number | null;
+  winnerDoubleFaults: number | null;
+  winnerServicePointsPlayed: number | null;
+  winner1stServeIn: number | null;
+  winner1stServeWon: number | null;
+  winner2ndServeWon: number | null;
+  winnerServeGames: number | null;
+  winnerBreakPointSaved: number | null;
+  winnerBreakPointFaced: number | null;
 
-  loserAces?: number;
-  loserDoubleFaults?: number;
-  loserServicePointsPlayed?: number;
-  loser1stServeIn?: number;
-  loser1stServeWon?: number;
-  loser2ndServeWon?: number;
-  loserServeGames?: number;
-  loserBreakPointSaved?: number;
-  loserBreakPointFaced?: number;
+  loserAces: number | null;
+  loserDoubleFaults: number | null;
+  loserServicePointsPlayed: number | null;
+  loser1stServeIn: number | null;
+  loser1stServeWon: number | null;
+  loser2ndServeWon: number | null;
+  loserServeGames: number | null;
+  loserBreakPointSaved: number | null;
+  loserBreakPointFaced: number | null;
 }
 
+export interface Tournament {
+  id: string;
+  name: string;
+  tournamentType: "GS" | "ATPM1000" | "ATP500" | "ATP250" | "DavisCup" | "LaverCup";
+  image: string;
+  drawSize: number;
+}
 
 export interface PlayerWithID extends Player {
   id: string;

@@ -20,24 +20,29 @@ import {
 } from "@chakra-ui/react";
 import { createListCollection } from "@chakra-ui/react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toaster } from "./toaster";
+import MatchesTable from "./MatchesTable";
 
 const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Match[]}) => {
   const { data: session } = useSession();
+  const router = useRouter();
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
     name: player.name,
+    nickName: player.nickName || "",
     age: player.age,
     country: player.country,
     hand: player.hand,
     backHand: player.backHand,
     rank: player.rank,
     profile: player.profile,
-    image : player.image || "",
+    image: player.image || "",
+    birthPlace: player.birthPlace || "",
+    turnedPro: player.turnedPro || "",
   });
 
-  console.log(matches);
 
   const isAdmin = session?.user?.role === ADMINROLE;
 
@@ -77,6 +82,9 @@ const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Matc
             description : result.message,
             duration: 2000
         });
+        
+        // Refresh the page to get updated data
+        router.refresh();
     }
 
     setEditMode(false);
@@ -91,7 +99,10 @@ const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Matc
       backHand: player.backHand,
       rank: player.rank,
       profile: player.profile,
-      image : player.image || "",
+      image: player.image || "",
+      birthPlace: player.birthPlace || "",
+      turnedPro: player.turnedPro || "",
+      nickName: player.nickName || "",
     });
     setEditMode(false);
   };
@@ -146,17 +157,7 @@ const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Matc
           <Flex align="center" mb={6} gap={4}>
             <Box>
               <Badge colorScheme="green" fontSize="1em" mb={2}>
-                {editMode ? (
-                  <Input
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
-                    size="sm"
-                    bg="white"
-                  />
-                ) : (
-                  player.country
-                )}
+                  {player.country}
               </Badge>
             </Box>
           </Flex>
@@ -167,7 +168,7 @@ const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Matc
             templateColumns={{ base: "1fr", md: "1fr 1fr" }}
             gap={4}
             mb={8}
-            templateRows={{ base: "repeat(6, 1fr)", md: "repeat(3, 1fr)" }}
+            templateRows={{ base: "repeat(9, 1fr)", md: "repeat(5, 1fr)" }}
           >
             <GridItem bg="gray.50" p={3} borderRadius="md">
               <Text fontWeight="bold">Age</Text>
@@ -260,6 +261,54 @@ const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Matc
                 <Text>{player.rank}</Text>
               )}
             </GridItem>
+            <GridItem bg="gray.50" p={3} borderRadius="md">
+              <Text fontWeight="bold">Nickname</Text>
+              {editMode ? (
+                <Input
+                  name="nickName"
+                  value={formData.nickName}
+                  onChange={handleInputChange}
+                  size="sm"
+                  bg="white"
+                  placeholder="Enter nickname"
+                />
+              ) : (
+                <Text>{player.nickName || "-"}</Text>
+              )}
+            </GridItem>
+            <GridItem bg="gray.50" p={3} borderRadius="md">
+              <Text fontWeight="bold">Birth Place</Text>
+              {editMode ? (
+                <Input
+                  name="birthPlace"
+                  value={formData.birthPlace}
+                  onChange={handleInputChange}
+                  size="sm"
+                  bg="white"
+                  placeholder="Enter birth place"
+                />
+              ) : (
+                <Text>{player.birthPlace || "-"}</Text>
+              )}
+            </GridItem>
+            <GridItem bg="gray.50" p={3} borderRadius="md">
+              <Text fontWeight="bold">Turned Pro</Text>
+              {editMode ? (
+                <Input
+                  name="turnedPro"
+                  type="number"
+                  value={formData.turnedPro}
+                  onChange={handleInputChange}
+                  size="sm"
+                  bg="white"
+                  placeholder="Year (e.g., 2010)"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                />
+              ) : (
+                <Text>{player.turnedPro || "-"}</Text>
+              )}
+            </GridItem>
           </Grid>
         </Tabs.Content>
         <Tabs.Content value="profile">
@@ -280,7 +329,7 @@ const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Matc
         </Tabs.Content>
         <Tabs.Content value="matches">
           {/* Matches content */}
-          <Text>Matches tab content coming soon.</Text>
+          <MatchesTable matches={matches} playerMatchId={player.playerMatchId} />
         </Tabs.Content>
       </Tabs.Root>
     </Box>

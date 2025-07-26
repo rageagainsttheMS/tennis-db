@@ -3,7 +3,8 @@ export const ROUTES = {
     PLAYERCREATE: "/admin/players/create",
     SIGNIN : "/signIn",
     TOURNADMIN : "/admin/tournaments",
-    PLAYERPROFILE: "/profile"
+    PLAYERPROFILE: "/profile",
+    TOURNEYCREATE: "/admin/tournaments/create",
 }
 
 export const HIGHLIGHT_BORDER = 'blackAlpha.500';
