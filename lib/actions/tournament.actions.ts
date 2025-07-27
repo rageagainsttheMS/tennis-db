@@ -8,6 +8,26 @@ export async function getTournaments(){
 }
 
 export async function createTournament(tournament: Tournament) {
+
+    //find tourney ID from matches table
+    const tourneyID = await prisma.match.findFirst({
+        where: {
+            tourneyName: tournament.name
+        },
+        select: {
+            tourneyId: true
+        }
+    });
+
+    if(!tourneyID) {
+        return {
+            success: false,
+            message: "Tournament not found in matches table"
+        };
+    }
+
+    tournament.id = tourneyID.tourneyId;
+
     const createdTournament = await prisma.tournament.create({
         data: tournament
     });
