@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { Box, Table } from "@chakra-ui/react";
 import { Match } from "@/types";
 import moment from "moment";
+import { ROUND_TYPES } from "@/types/constants";
 
 const MatchesTable = ({ matches, playerMatchId }: { matches: Match[], playerMatchId?: string | null }) => {
   const router = useRouter();
@@ -67,7 +68,7 @@ const MatchesTable = ({ matches, playerMatchId }: { matches: Match[], playerMatc
                   {opponent}
                 </Table.Cell>
                 <Table.Cell>{match.score}</Table.Cell>
-                <Table.Cell>{match.round}</Table.Cell>
+                <Table.Cell> {ROUND_TYPES.find(round => round.value === match.round)?.label}</Table.Cell>
               </Table.Row>
             );
           })}

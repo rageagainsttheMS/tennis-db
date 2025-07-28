@@ -6,10 +6,10 @@ const PlayerProfilePage = async ({ params }: { params: { id: string } }) => {
   const { id } = await params;
 
   const player = await getPlayerById(id);
-    if (!player) {
+  const matches = await getPlayerMatches(player?.playerMatchId || "");
+  if (!player) {
     redirect("/not-found");
   }
-  const matches = await getPlayerMatches(player?.playerMatchId || "");
 
   return <PlayerProfile player={player} matches={matches} />;
 };

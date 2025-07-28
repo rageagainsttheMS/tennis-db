@@ -22,6 +22,17 @@ export const PLAYER_BACKHAND = [
     {ID : "TWOHANDED", TEXT : "Two Handed"},
 ]
 
+export const ROUND_TYPES = [
+    { label: "Final", value: "F" },
+    { label: "Semi-Final", value: "SF" },
+    { label: "Quarter-Final", value: "QF" },
+    { label: "Round of 16", value: "R16" },
+    { label: "3rd Round", value: "R32" },
+    { label: "2nd Round", value: "R64" },
+    { label: "1st Round", value: "R128" },
+    { label: "Round Robin", value: "RR" },
+]
+
 export const TOURNAMENT_TYPES = [
     { label: "Grand Slam", value: "GS" },
     { label: "ATP Masters 1000", value: "ATPM1000" },

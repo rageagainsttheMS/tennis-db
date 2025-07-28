@@ -1,7 +1,7 @@
 'use client'
 import { useRouter } from "next/navigation";
 import { Box, Button, Flex, Table } from "@chakra-ui/react";
-import { ROUTES } from "@/types/constants";
+import { ROUTES, TOURNAMENT_TYPES } from "@/types/constants";
 import Link from "next/link";
 import {Tournament } from "@/types";
 
@@ -21,8 +21,8 @@ const TournamentsTable = ({ tournaments }: { tournaments: Tournament[] }) => {
         <Table.Header>
           <Table.Row>
             <Table.ColumnHeader>Name</Table.ColumnHeader>
-            <Table.ColumnHeader>Draw Size</Table.ColumnHeader>
             <Table.ColumnHeader>Tournament Type</Table.ColumnHeader>
+            <Table.ColumnHeader>Surface</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -33,8 +33,8 @@ const TournamentsTable = ({ tournaments }: { tournaments: Tournament[] }) => {
               _hover={{ bg: "gray.100", cursor: "pointer" }}
             >
               <Table.Cell>{tournament.name}</Table.Cell>
-              <Table.Cell>{tournament.drawSize}</Table.Cell>
-              <Table.Cell>{tournament.tournamentType}</Table.Cell>
+              <Table.Cell> {TOURNAMENT_TYPES.find(type => type.value === tournament.tournamentType)?.label}</Table.Cell>
+              <Table.Cell>{tournament.surface}</Table.Cell>
             </Table.Row>
           ))}
         </Table.Body>

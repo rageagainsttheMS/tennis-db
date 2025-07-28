@@ -12,7 +12,7 @@ const PlayersTable = ({ players }: { players: PlayerWithID[] }) => {
     <Box mx="auto" ml={10} mt={8}>
       <Flex justify="flex-end" mx={4}>
         <Link href={ROUTES.PLAYERCREATE} passHref>
-          <Button colorScheme="green" as="a" size="sm">
+          <Button colorScheme="green" size="sm">
             Create Player
           </Button>
         </Link>

@@ -79,6 +79,8 @@ export interface Tournament {
   tournamentType: "GS" | "ATPM1000" | "ATP500" | "ATP250" | "DavisCup" | "LaverCup";
   image: string;
   drawSize: number;
+  description: string | null;
+  surface: string;
 }
 
 export interface PlayerWithID extends Player {

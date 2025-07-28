@@ -7,6 +7,21 @@ export async function getTournaments(){
     return await prisma.tournament.findMany()
 }
 
+export async function getTournamentById(id: string) {
+    const tournament = await prisma.tournament.findUnique({
+        where: { id }
+    });
+    return tournament;
+}
+
+export async function getTournamentMatches(tournamentId: string) {
+    const matches = await prisma.match.findMany({
+        where: { tourneyId: tournamentId },
+        orderBy: { tourneyDate: 'desc' },
+    });
+    return matches;
+}
+
 export async function createTournament(tournament: Tournament) {
 
     //find tourney ID from matches table

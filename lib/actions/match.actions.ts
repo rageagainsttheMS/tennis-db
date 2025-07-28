@@ -2,8 +2,9 @@
 import { prisma } from "@/db/prisma";
 
 
-export async function getMatchTest(){
-    return await prisma.match.findFirst({
-        where : { winnerName : 'Novak Djokovic'}
-    })
+export async function getMatchById(id: number){
+    const match = await prisma.match.findUnique({
+        where: { id : id }
+    });
+    return match;
 }

@@ -9,7 +9,6 @@ const AdminTournamentsPage = async () => {
   if (!session) {
     redirect(ROUTES.SIGNIN);
   }
-
   const tournaments = await getTournaments();
 
   return <TournamentsTable tournaments={tournaments} />;

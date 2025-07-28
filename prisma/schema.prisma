@@ -55,6 +55,8 @@ model Tournament {
   tournamentType TournamentType
   image String
   drawSize Int
+  description String?
+  surface String
 }
 
 model Match {
