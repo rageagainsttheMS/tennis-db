@@ -3,7 +3,7 @@ import MatchDetails from "@/components/ui/MatchDetails";
 import { getMatchById } from "@/lib/actions/match.actions";
 import { redirect } from "next/navigation";
 
-const MatchPage = async ({ params }: { params: { id: string } }) => {
+const MatchPage = async ({ params }: { params: Promise<{ id: string }> }) => {
     const { id } = await params;
     const session = await auth();
     if(!session) {

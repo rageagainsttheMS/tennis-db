@@ -34,7 +34,12 @@ function Header() {
               <Button variant="subtle" size="sm" onClick={() => router.push(ROUTES.TOURNADMIN)}>Tournaments</Button>
             </>
           )}
-          {session?.user?.name && <MenuButton name={session?.user?.name} role={session?.user?.role} />}
+          {session?.user?.name && (
+            <MenuButton
+              name={session?.user?.name ?? ""}
+              role={session?.user?.role ?? ""}
+            />
+          )}
         </Flex>
       </Flex>
     </Box>

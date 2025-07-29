@@ -51,7 +51,7 @@ export async function createTournament(tournament: Tournament) {
         };
     }
 
-    tournament.id = tourneyID.tourneyId;
+    tournament.id = tourneyID.tourneyId ?? "";
 
     const createdTournament = await prisma.tournament.create({
         data: tournament

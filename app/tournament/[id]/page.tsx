@@ -6,7 +6,7 @@ import { ADMINROLE } from "@/types/constants";
 import { Box, Button, Text } from "@chakra-ui/react";
 import Link from "next/link";
 
-const TournamentPage = async ({ params }: { params: { id: string } }) => {
+const TournamentPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
   const session = await auth();
   if(!session) {

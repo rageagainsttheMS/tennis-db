@@ -85,12 +85,18 @@ export async function updatePlayer(id: string, oPayload: Player) {
   try {
     oPayload.rank = parseInt(oPayload.rank.toString(), 10);
     const { hand, backHand, ...rest } = oPayload;
+    const { playerMatchId, ...restData } = rest;
     const updatedPlayer = await prisma.player.update({
       where: { id },
       data: {
-        ...rest,
+        ...restData,
         hand: hand as Hand,
         backHand: backHand as Backhand,
+        ...(typeof playerMatchId === "string"
+          ? { playerMatchId }
+          : playerMatchId === undefined
+          ? {}
+          : { playerMatchId: undefined }),
       },
     });
     const result: ActionResult = {

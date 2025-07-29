@@ -5,7 +5,7 @@ import { ADMINROLE } from "@/types/constants";
 import { Box, Button, Link, Text } from "@chakra-ui/react";
 import { redirect } from "next/navigation";
 
-const PlayerProfilePage = async ({ params }: { params: { id: string } }) => {
+const PlayerProfilePage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
   const session = await auth();
   const player = await getPlayerById(id);
