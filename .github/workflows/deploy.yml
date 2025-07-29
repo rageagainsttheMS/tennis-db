@@ -14,7 +14,7 @@ on:
     types: [opened, synchronize, reopened]
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '22'
   AWS_REGION: 'ap-southeast-2'
   CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
   CDK_DEFAULT_REGION: 'ap-southeast-2'
