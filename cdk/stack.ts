@@ -107,12 +107,14 @@ class NextjsStack extends Stack {
     return bucket;
   }
 
-  #grantS3Access(nextjs: NextjsGlobalFunctions, bucket: Bucket) {
-    // Grant read/write access to all Lambda functions in nextjs.nextjsFunctions
-    for (const fn of Object.values(nextjs.nextjsFunctions)) {
-      bucket.grantReadWrite(fn);
+#grantS3Access(nextjs: NextjsGlobalFunctions, bucket: Bucket) {
+  if (nextjs.nextjsFunctions) {
+    // Grant access to individual functions
+    if (nextjs.nextjsFunctions.function) {
+      bucket.grantReadWrite(nextjs.nextjsFunctions.function);
     }
   }
+}
 
 //   #createDnsRecords(nextjs: NextjsGlobalFunctions, hostedZone: IHostedZone) {
 //     new ARecord(this, "ARecord", {
