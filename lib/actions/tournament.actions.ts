@@ -3,8 +3,18 @@ import { prisma } from "@/db/prisma";
 import { ActionResult, Tournament } from "@/types";
 
 
-export async function getTournaments(){
-    return await prisma.tournament.findMany()
+export async function getTournaments(searchQuery?: string){
+    return await prisma.tournament.findMany({
+        where: searchQuery ? {
+            name: {
+                contains: searchQuery,
+                mode: 'insensitive'
+            }
+        } : undefined,
+        orderBy: {
+            name: 'asc'
+        }
+    })
 }
 
 export async function getTournamentById(id: string) {

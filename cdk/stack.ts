@@ -12,20 +12,30 @@ import {
   Port,
   Vpc,
 } from "aws-cdk-lib/aws-ec2";
-
+import {
+  Bucket,
+  BucketAccessControl,
+  BucketEncryption,
+  BlockPublicAccess,
+  HttpMethods,
+} from "aws-cdk-lib/aws-s3";
+import { RemovalPolicy } from "aws-cdk-lib";
 
 class NextjsStack extends Stack {
   //#hostedZoneDomainName = "example.com";
-  // #distributionDomainName = `blog.${this.#hostedZoneDomainName}`;
+  // #distributionDomainName = blog.${this.#hostedZoneDomainName};
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
     const vpc = this.#createVpc();
+    const s3Bucket = this.#createS3Bucket();
+    
     //const hostedZone = this.#getHostedZone();
     //const certificate = this.#getCertificate(hostedZone);
-    new NextjsGlobalFunctions(this, "Nextjs", {
+    
+    const nextjs = new NextjsGlobalFunctions(this, "Nextjs", {
       healthCheckPath: "/api/health",
-       buildContext: join(__dirname, ".."),
+      buildContext: join(__dirname, ".."),
       overrides: {
         // nextjsDistribution: {
         //   distributionProps: {
@@ -41,6 +51,10 @@ class NextjsStack extends Stack {
         },
       },
     });
+
+    // Grant the Next.js Lambda functions read/write access to the S3 bucket
+    this.#grantS3Access(nextjs, s3Bucket);
+    
     //this.#createDnsRecords(nextjs, hostedZone);
   }
 
@@ -49,12 +63,14 @@ class NextjsStack extends Stack {
   //     domainName: this.#hostedZoneDomainName,
   //   });
   // }
+  
   // #getCertificate(hostedZone: IHostedZone) {
   //   return new Certificate(this, "Certificate", {
   //     domainName: this.#distributionDomainName,
   //     validation: CertificateValidation.fromDns(hostedZone),
   //   });
   // }
+
   #createVpc() {
     const natGatewayProvider = new FckNatInstanceProvider({
       instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.NANO),
@@ -70,6 +86,34 @@ class NextjsStack extends Stack {
     );
     return vpc;
   }
+
+  #createS3Bucket() {
+    const bucket = new Bucket(this, "NextjsS3Bucket", {
+      bucketName: `${this.stackName.toLowerCase()}-nextjs-bucket-${this.account}`,
+      encryption: BucketEncryption.S3_MANAGED,
+      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+      accessControl: BucketAccessControl.PRIVATE,
+      versioned: true,
+      removalPolicy: RemovalPolicy.DESTROY, // Change to RETAIN for production
+      autoDeleteObjects: true, // Remove for production
+      // Add CORS for local development if needed
+      cors: [{
+        allowedMethods: [HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST],
+        allowedOrigins: ['http://localhost:3000'], // Your local dev server
+        allowedHeaders: ['*'],
+      }]
+    });
+
+    return bucket;
+  }
+
+  #grantS3Access(nextjs: NextjsGlobalFunctions, bucket: Bucket) {
+    // Grant read/write access to all Lambda functions in nextjs.nextjsFunctions
+    for (const fn of Object.values(nextjs.nextjsFunctions)) {
+      bucket.grantReadWrite(fn);
+    }
+  }
+
 //   #createDnsRecords(nextjs: NextjsGlobalFunctions, hostedZone: IHostedZone) {
 //     new ARecord(this, "ARecord", {
 //       recordName: this.#distributionDomainName,
@@ -89,9 +133,9 @@ class NextjsStack extends Stack {
 }
 
 const app = new App();
-export const stack =  new NextjsStack(app, 'nextjs', {
-   env: {
-    account: process.env.CDK_DEFAULT_ACCOUNT, 
+export const stack = new NextjsStack(app, 'nextjs', {
+  env: {
+    account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION
   }
 });

@@ -17,22 +17,20 @@ import { useRouter } from "next/navigation";
 import { Tournament } from "@/types";
 // You need to implement this action
 import { createTournament } from "@/lib/actions/tournament.actions";
+import { createListCollection } from "@chakra-ui/react";
+import { TOURNAMENT_TYPES } from "@/types/constants";
 
-const TOURNAMENT_TYPES = [
-  { label: "Grand Slam", value: "GS" },
-  { label: "ATP Masters 1000", value: "ATPM1000" },
-  { label: "ATP 500", value: "ATP500" },
-  { label: "ATP 250", value: "ATP250" },
-  { label: "Davis Cup", value: "DavisCup" },
-  { label: "Laver Cup", value: "LaverCup" },
-];
+const tournamentTypeCollection = createListCollection({items : TOURNAMENT_TYPES});
 
 export default function CreateTournamentPage() {
   const [form, setForm] = useState<Tournament>({
     name: "",
-    tournamentType: "",
+    tournamentType: "GS",
     image: "",
     drawSize: 0,
+    surface: "",
+    description: "",
+    id : ""
   });
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -70,16 +68,14 @@ export default function CreateTournamentPage() {
         <Field.Root required mb={4}>
           <Field.Label>Name</Field.Label>
           <Input name="name" value={form.name} onChange={handleChange} />
-        </Field.Root>
-        <Field.Root required mb={4}>
           <Field.Label>Tournament Type</Field.Label>
            <Select.Root
             variant={"subtle"}
-            collection={TOURNAMENT_TYPES}
+            collection={tournamentTypeCollection}
             value={[form.tournamentType]} // Use form state directly
             onValueChange={(details) => {
               const selectedValue = details.value[0];
-              setForm((prev) => ({ ...prev, tournamentType: selectedValue }));
+              setForm((prev) => ({ ...prev, tournamentType: selectedValue as Tournament["tournamentType"] }));
             }}
           >
             <Select.HiddenSelect />
@@ -94,7 +90,7 @@ export default function CreateTournamentPage() {
             <Portal>
               <Select.Positioner>
                 <Select.Content>
-                  {TOURNAMENT_TYPES.map((type) => (
+                  {tournamentTypeCollection.items.map((type) => (
                     <Select.Item item={type} key={type.value}>
                       {type.label}
                       <Select.ItemIndicator />
@@ -114,6 +110,22 @@ export default function CreateTournamentPage() {
             onChange={handleChange}
             min={2}
             max={256}
+          />
+        </Field.Root>
+        <Field.Root required mb={4}>
+          <Field.Label>Surface</Field.Label>
+          <Input name="surface" value={form.surface} onChange={handleChange} />
+        </Field.Root>
+        <Field.Root mb={4}>
+          <Field.Label>Description</Field.Label>
+          <Textarea
+            rows={10}
+            name="description"
+            value={form.description || ""}
+            onChange={(e) => {
+              const { name, value } = e.target;
+              setForm((prev) => ({ ...prev, [name]: value }));
+            }}
           />
         </Field.Root>
         <Field.Root mb={4}>

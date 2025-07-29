@@ -1,59 +1,59 @@
-# name: Deploy CDK Application
+name: Deploy CDK Application
 
-# on:
-#   push:
-#     branches:
-#       - main
-#     paths-ignore:
-#       - 'README.md'
-#       - 'docs/**'
-#       - '.gitignore'
-#   pull_request:
-#     branches:
-#       - main
-#     types: [opened, synchronize, reopened]
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '.gitignore'
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
 
-# env:
-#   NODE_VERSION: '18'
-#   AWS_REGION: 'ap-southeast-2'
-#   CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
-#   CDK_DEFAULT_REGION: 'ap-southeast-2'
+env:
+  NODE_VERSION: '18'
+  AWS_REGION: 'ap-southeast-2'
+  CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+  CDK_DEFAULT_REGION: 'ap-southeast-2'
 
-# jobs:
-#   # Build and Deploy Job
-#   deploy:
-#     name: Deploy to AWS
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
+jobs:
+  # Build and Deploy Job
+  deploy:
+    name: Deploy to AWS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-#       - name: Setup Node.js
-#         uses: actions/setup-node@v4
-#         with:
-#           node-version: ${{ env.NODE_VERSION }}
-#           cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-#       - name: Setup Docker Buildx
-#         uses: docker/setup-buildx-action@v3
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-#       - name: Configure AWS credentials
-#         uses: aws-actions/configure-aws-credentials@v4
-#         with:
-#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           aws-region: ${{ env.AWS_REGION }}
-#           role-duration-seconds: 3600
-#           role-session-name: GitHubActions-CDK-Deploy
-#       - name: Install dependencies
-#         run: npm ci
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-duration-seconds: 3600
+          role-session-name: GitHubActions-CDK-Deploy
+      - name: Install dependencies
+        run: npm ci
 
-#       - name: Install CDK CLI
-#         run: npm install -g aws-cdk@latest
+      - name: Install CDK CLI
+        run: npm install -g aws-cdk@latest
 
-#       - name: CDK Deploy
-#         run: |
-#           cdk deploy --require-approval never --all
-#         env:
-#           CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
-#           CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}
+      - name: CDK Deploy
+        run: |
+          cdk deploy --require-approval never --all
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+          CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}

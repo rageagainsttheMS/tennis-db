@@ -59,8 +59,18 @@ export async function getPlayerMatches(playerMatchId: string) {
     return matches;
 }
 
-export async function getPlayers() {
-    const players = await prisma.player.findMany();
+export async function getPlayers(searchQuery?: string) {
+    const players = await prisma.player.findMany({
+        where: searchQuery ? {
+            name: {
+                contains: searchQuery,
+                mode: 'insensitive'
+            }
+        } : undefined,
+        orderBy: {
+            name: 'asc'
+        }
+    });
     return players;
 }
 
