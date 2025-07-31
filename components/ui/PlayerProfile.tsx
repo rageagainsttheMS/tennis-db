@@ -10,20 +10,24 @@ import {
   Text,
   Grid,
   GridItem,
-  Badge,
   Flex,
   Tabs,
   Button,
   Input,
   Textarea,
   Select,
+  Image,
 } from "@chakra-ui/react";
 import { createListCollection } from "@chakra-ui/react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useEffect } from "react";
 import { toaster } from "./toaster";
 import MatchesTable from "./MatchesTable";
+import { ImageUpload } from "./shared/ImageUpload";
+import { useImageUpload } from "@/lib/hooks/useImageUpload";
+
 
 const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Match[]}) => {
   const { data: session } = useSession();
@@ -43,6 +47,25 @@ const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Matc
     turnedPro: player.turnedPro || "",
   });
 
+  const { getPresignedUrl } = useImageUpload();
+  const [imageSrc, setImageSrc] = useState<string | null>(player.image || null);
+
+ useEffect(() => {
+  const fetchImageUrl = async () => {
+    try {
+      const viewUrl = await getPresignedUrl(player.image);
+      setImageSrc(viewUrl);
+    } catch (error) {
+      console.error('Failed to get image URL:', error);
+    }
+  }
+  fetchImageUrl();
+ }, [player.image, getPresignedUrl]);
+
+ const onImageUploadSuccess = (url: string) => {
+  setImageSrc(url);
+  setFormData(prev => ({ ...prev, image: url }));
+};
 
   const isAdmin = session?.user?.role === ADMINROLE;
 
@@ -111,20 +134,7 @@ const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Matc
     <Box mx="auto" mt={10} maxW="1200px">
       <Flex justify="space-between" align="center" mb={4}>
         <Heading as="h1" size="4xl">
-          {editMode ? (
-            <Input
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              fontSize="4xl"
-              fontWeight="bold"
-              border="none"
-              p={0}
-              _focus={{ boxShadow: "none", borderColor: "blue.500" }}
-            />
-          ) : (
-            player.name
-          )}
+          {player.name}
         </Heading>
         {isAdmin && (
           <Box>
@@ -154,13 +164,54 @@ const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Matc
         </Tabs.List>
         <Tabs.Content value="overview">
           {/* Overview content */}
-          <Flex align="center" mb={6} gap={4}>
+          <Flex direction={{ base: "column", md: "row" }} gap={6} mb={6}>
+            {/* Player Image */}
             <Box>
-              <Badge colorScheme="green" fontSize="1em" mb={2}>
-                  {player.country}
-              </Badge>
+              {editMode ? (
+                <Box>
+                  <Text fontWeight="bold" mb={2}>Player Image</Text>
+                  <Box mb={4}>
+                    <ImageUpload 
+                      folder="players" 
+                      currentImage={formData.image}
+                      onImageUploaded={onImageUploadSuccess} 
+                    />
+                  </Box>
+                </Box>
+              ) : (
+                <Box>
+                  {imageSrc ? (
+                    <Image
+                      src={imageSrc}
+                      alt={`${player.name} profile picture`}
+                      boxSize={{ base: "200px", md: "250px" }}
+                      objectFit="cover"
+                      borderRadius="lg"
+                      border="2px solid"
+                      borderColor="gray.200"
+                      shadow="md"
+                    />
+                  ) : (
+                    <Box
+                      boxSize={{ base: "200px", md: "250px" }}
+                      bg="gray.100"
+                      borderRadius="lg"
+                      border="2px solid"
+                      borderColor="gray.200"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <Text color="gray.500" textAlign="center">
+                        No Image<br />Available
+                      </Text>
+                    </Box>
+                  )}
+                </Box>
+              )}
             </Box>
           </Flex>
+          
           <Heading as="h2" size="md" mb={3}>
             Personal details
           </Heading>

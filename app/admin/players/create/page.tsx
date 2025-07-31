@@ -17,6 +17,7 @@ import { createListCollection } from "@chakra-ui/react";
 import { createPlayer } from "@/lib/actions/player.actions";
 import { Toaster, toaster } from "@/components/ui/toaster";
 import { useRouter } from "next/navigation";
+import { ImageUpload } from "@/components/ui/shared/ImageUpload";
 
 export default function CreatePlayerPage() {
 
@@ -35,6 +36,7 @@ export default function CreatePlayerPage() {
     birthPlace: "",
     turnedPro: "",
     playerMatchId: "",
+    nickName: "",
   });
   const router = useRouter();
 
@@ -184,8 +186,8 @@ export default function CreatePlayerPage() {
           />
         </Field.Root>
         <Field.Root mb={4}>
-          <Field.Label>Image URL</Field.Label>
-          <Input name="image" value={form.image} onChange={handleChange} />
+          <Field.Label>Image</Field.Label>
+           <ImageUpload folder="players" key={form.image} onImageUploaded={(url) => setForm((prev) => ({ ...prev, image: url }))} />
         </Field.Root>
         <Field.Root mb={4}>
           <Field.Label>Birth Place</Field.Label>
@@ -194,6 +196,10 @@ export default function CreatePlayerPage() {
         <Field.Root mb={4}>
           <Field.Label>Turned Pro</Field.Label>
           <Input name="turnedPro" value={form.turnedPro} onChange={handleChange} />
+        </Field.Root>
+        <Field.Root mb={4}>
+          <Field.Label>Nickname</Field.Label>
+           <Input name="nickName" value={form.nickName} onChange={handleChange}/>
         </Field.Root>
         <Flex justify="flex-end" align="center">
           {isPending && <Spinner size="sm" mr={4} />}
