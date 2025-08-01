@@ -81,6 +81,13 @@ export async function getPlayerById(id: string) {
   return player;
 }
 
+export async function getPlayerByMatchId(playerMatchId: string) {
+  const player = await prisma.player.findFirst({
+    where: { playerMatchId },
+  });
+  return player;
+}
+
 export async function updatePlayer(id: string, oPayload: Player) {
   try {
     oPayload.rank = parseInt(oPayload.rank.toString(), 10);

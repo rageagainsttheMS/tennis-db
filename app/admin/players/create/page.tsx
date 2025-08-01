@@ -64,6 +64,12 @@ export default function CreatePlayerPage() {
 
   const [isPending, startTransition] = useTransition();
 
+    const onImageUploadSuccess = (url: string) => {
+      const key = new URL(url).pathname.slice(1); // Remove leading slash
+      setForm((prev) => ({ ...prev, image: key }));
+  };
+
+
   return (
     <Box maxW="1000px" mx="auto" mt={10} mb={10}>
       <Toaster />
@@ -187,7 +193,7 @@ export default function CreatePlayerPage() {
         </Field.Root>
         <Field.Root mb={4}>
           <Field.Label>Image</Field.Label>
-           <ImageUpload folder="players" key={form.image} onImageUploaded={(url) => setForm((prev) => ({ ...prev, image: url }))} />
+           <ImageUpload folder="players" key={form.image} onImageUploaded={onImageUploadSuccess} />
         </Field.Root>
         <Field.Root mb={4}>
           <Field.Label>Birth Place</Field.Label>

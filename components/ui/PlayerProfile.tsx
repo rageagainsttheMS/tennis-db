@@ -63,8 +63,8 @@ const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Matc
  }, [player.image, getPresignedUrl]);
 
  const onImageUploadSuccess = (url: string) => {
-  setImageSrc(url);
-  setFormData(prev => ({ ...prev, image: url }));
+  const key = new URL(url).pathname.slice(1); // Remove leading slash
+  setFormData(prev => ({ ...prev, image: key }));
 };
 
   const isAdmin = session?.user?.role === ADMINROLE;
