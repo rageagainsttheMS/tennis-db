@@ -48,9 +48,10 @@ const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Matc
   });
 
   const { getPresignedUrl } = useImageUpload();
-  const [imageSrc, setImageSrc] = useState<string | null>(player.image || null);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
 
  useEffect(() => {
+  if (!player.image) return;
   const fetchImageUrl = async () => {
     try {
       const viewUrl = await getPresignedUrl(player.image);

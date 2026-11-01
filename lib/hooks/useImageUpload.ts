@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export function useImageUpload() {
   const [uploading, setUploading] = useState(false);
@@ -43,7 +43,7 @@ export function useImageUpload() {
     }
   };
 
-  const getPresignedUrl = async (key: string): Promise<string> => {
+  const getPresignedUrl = useCallback(async (key: string): Promise<string> => {
     try {
       const response = await fetch('/api/get-image-url', {
         method: 'POST',
@@ -59,7 +59,7 @@ export function useImageUpload() {
       console.error('Get presigned URL error:', error);
       throw error;
     }
-  };
+  }, []);
 
   return { uploadImage, uploading, uploadProgress, getPresignedUrl };
 }
