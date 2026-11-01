@@ -13,6 +13,8 @@
     "@aws-cdk/aws-cloudfront": "^1.204.0",
     "@aws-cdk/aws-s3": "^1.204.0",
     "@aws-cdk/aws-s3-deployment": "^1.204.0",
+    "@aws-sdk/client-s3": "^3.857.0",
+    "@aws-sdk/s3-request-presigner": "^3.857.0",
     "@chakra-ui/react": "^3.21.0",
     "@emotion/react": "^11.14.0",
     "@neondatabase/serverless": "^1.0.1",

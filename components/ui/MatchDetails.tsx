@@ -2,6 +2,9 @@
 
 import { Match } from "@/types";
 import { ROUND_TYPES } from "@/types/constants";
+import { getPlayerByMatchId } from "@/lib/actions/player.actions";
+import { useImageUpload } from "@/lib/hooks/useImageUpload";
+import { useState, useEffect } from "react";
 import {
   Box,
   Heading,
@@ -11,6 +14,7 @@ import {
   Avatar,
   Card,
   Separator,
+  Image,
 } from "@chakra-ui/react";
 
 interface MatchDetailsProps {
@@ -18,6 +22,39 @@ interface MatchDetailsProps {
 }
 
 const MatchDetails = ({ match }: MatchDetailsProps) => {
+  const { getPresignedUrl } = useImageUpload();
+  const [winnerImage, setWinnerImage] = useState<string | null>(null);
+  const [loserImage, setLoserImage] = useState<string | null>(null);
+
+  // Fetch player images
+  useEffect(() => {
+    const fetchPlayerImages = async () => {
+      try {
+        // Fetch winner image
+        if (match.winnerId) {
+          const winnerPlayer = await getPlayerByMatchId(match.winnerId);
+          if (winnerPlayer?.image) {
+            const winnerImageUrl = await getPresignedUrl(winnerPlayer.image);
+            setWinnerImage(winnerImageUrl);
+          }
+        }
+
+        // Fetch loser image
+        if (match.loserId) {
+          const loserPlayer = await getPlayerByMatchId(match.loserId);
+          if (loserPlayer?.image) {
+            const loserImageUrl = await getPresignedUrl(loserPlayer.image);
+            setLoserImage(loserImageUrl);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch player images:', error);
+      }
+    };
+
+    fetchPlayerImages();
+  }, [match.winnerId, match.loserId, getPresignedUrl]);
+
   // Parse the match statistics
   const winnerStats = {
     aces: match.winnerAces || 0,
@@ -97,12 +134,24 @@ const MatchDetails = ({ match }: MatchDetailsProps) => {
                   <Text fontSize="sm" color="gray.500">Rank: {match.winnerRank}</Text>
                 )}
               </Box>
-              <Avatar.Root 
-                size="xl" 
-                bg="green.500"
-              >
-                <Avatar.Fallback>{match.winnerName.charAt(0)}</Avatar.Fallback>
-              </Avatar.Root>
+              {winnerImage ? (
+                <Image
+                  src={winnerImage}
+                  alt={`${match.winnerName} profile picture`}
+                  boxSize="80px"
+                  borderRadius="full"
+                  objectFit="cover"
+                  border="3px solid"
+                  borderColor="green.500"
+                />
+              ) : (
+                <Avatar.Root 
+                  size="xl" 
+                  bg="green.500"
+                >
+                  <Avatar.Fallback>{match.winnerName.charAt(0)}</Avatar.Fallback>
+                </Avatar.Root>
+              )}
             </Flex>
 
             {/* Score */}
@@ -120,12 +169,24 @@ const MatchDetails = ({ match }: MatchDetailsProps) => {
 
             {/* Loser */}
             <Flex align="center">
-              <Avatar.Root 
-                size="xl" 
-                bg="red.500"
-              >
-                <Avatar.Fallback>{match.loserName?.charAt(0) || "L"}</Avatar.Fallback>
-              </Avatar.Root>
+              {loserImage ? (
+                <Image
+                  src={loserImage}
+                  alt={`${match.loserName} profile picture`}
+                  boxSize="80px"
+                  borderRadius="full"
+                  objectFit="cover"
+                  border="3px solid"
+                  borderColor="red.500"
+                />
+              ) : (
+                <Avatar.Root 
+                  size="xl" 
+                  bg="red.500"
+                >
+                  <Avatar.Fallback>{match.loserName?.charAt(0) || "L"}</Avatar.Fallback>
+                </Avatar.Root>
+              )}
               <Box textAlign="left" ml={4}>
                 <Heading size="lg" color="red.600">{match.loserName}</Heading>
                 <Text fontSize="sm" color="gray.600">{match.loserCountry}</Text>

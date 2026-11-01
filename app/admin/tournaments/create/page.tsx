@@ -19,6 +19,7 @@ import { Tournament } from "@/types";
 import { createTournament } from "@/lib/actions/tournament.actions";
 import { createListCollection } from "@chakra-ui/react";
 import { TOURNAMENT_TYPES } from "@/types/constants";
+import { ImageUpload } from "@/components/ui/shared/ImageUpload";
 
 const tournamentTypeCollection = createListCollection({items : TOURNAMENT_TYPES});
 
@@ -34,6 +35,12 @@ export default function CreateTournamentPage() {
   });
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  
+ const onImageUploadSuccess = (url: string) => {
+  const key = new URL(url).pathname.slice(1); // Remove leading slash
+  setForm((prev) => ({ ...prev, image: key }));
+};
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -129,8 +136,8 @@ export default function CreateTournamentPage() {
           />
         </Field.Root>
         <Field.Root mb={4}>
-          <Field.Label>Image URL</Field.Label>
-          <Input name="image" value={form.image} onChange={handleChange} />
+          <Field.Label>Image</Field.Label>
+            <ImageUpload folder="tournaments" key={form.image} onImageUploaded={onImageUploadSuccess} />
         </Field.Root>
         <Flex justify="flex-end" align="center">
           {isPending && <Spinner size="sm" mr={4} />}
