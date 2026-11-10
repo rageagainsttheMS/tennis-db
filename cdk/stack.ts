@@ -65,8 +65,9 @@ class NextjsStack extends Stack {
   // }
 
   #createS3Bucket() {
+    // No fixed bucketName: CloudFormation generates a unique one, so a bucket left behind by an
+    // earlier stack can't block a fresh deploy. The app reads it from AWS_S3_BUCKET_NAME.
     const bucket = new Bucket(this, "NextjsS3Bucket", {
-      bucketName: `${this.stackName.toLowerCase()}-nextjs-bucket-${this.account}`,
       encryption: BucketEncryption.S3_MANAGED,
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
       accessControl: BucketAccessControl.PRIVATE,
