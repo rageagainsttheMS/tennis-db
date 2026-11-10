@@ -1,0 +1,1 @@
+DO NOT make you own git commits or pull requests, or create you own branches unless explicitly prompted to do so Suggest commit messages to the user once your current task is completed. Refer to AGENTS.md before beginning your work
