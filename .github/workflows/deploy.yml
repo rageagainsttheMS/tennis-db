@@ -8,21 +8,21 @@ on:
       - 'README.md'
       - 'docs/**'
       - '.gitignore'
+  # PRs run the checks and `cdk synth` only. The deploy step below is skipped for them.
   pull_request:
     branches:
       - main
     types: [opened, synchronize, reopened]
 
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: '22' # matches the Lambda runtime cdk-nextjs uses (NODEJS_22_X)
   AWS_REGION: 'ap-southeast-2'
   CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
   CDK_DEFAULT_REGION: 'ap-southeast-2'
 
 jobs:
-  # Build and Deploy Job
   deploy:
-    name: Deploy to AWS
+    name: Check and deploy to AWS
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -34,10 +34,43 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      # Also runs `prisma generate` (postinstall).
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      # cdk-nextjs 0.7 stages `.env.production` into the Lambda package and loads it at
+      # startup. Without this step the deployed app has no database or auth settings.
+      # Only written for deploys, so PR builds from forks never see the secrets.
+      - name: Write runtime environment
+        if: github.event_name == 'push'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          AUTH_GOOGLE_ID: ${{ secrets.AUTH_GOOGLE_ID }}
+          AUTH_GOOGLE_SECRET: ${{ secrets.AUTH_GOOGLE_SECRET }}
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+        run: |
+          {
+            printf 'DATABASE_URL="%s"\n' "$DATABASE_URL"
+            printf 'AUTH_SECRET="%s"\n' "$AUTH_SECRET"
+            printf 'AUTH_GOOGLE_ID="%s"\n' "$AUTH_GOOGLE_ID"
+            printf 'AUTH_GOOGLE_SECRET="%s"\n' "$AUTH_GOOGLE_SECRET"
+            printf 'ADMIN_EMAILS="%s"\n' "$ADMIN_EMAILS"
+            printf 'AUTH_TRUST_HOST=true\n'
+          } > .env.production
+
+      # Synth runs `npm run build` (prisma generate + next build) through the cdk-nextjs adapter.
+      - name: CDK synth
+        run: npx cdk synth --quiet
 
       - name: Configure AWS credentials
+        if: github.event_name == 'push'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -45,15 +78,10 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           role-duration-seconds: 3600
           role-session-name: GitHubActions-CDK-Deploy
-      - name: Install dependencies
-        run: npm ci
 
-      - name: Install CDK CLI
-        run: npm install -g aws-cdk@latest
-
-      - name: CDK Deploy
-        run: |
-          cdk deploy --require-approval never --all
-        env:
-          CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
-          CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}
+      # Uses the project's pinned aws-cdk devDependency, not a global @latest install,
+      # and deploys the assembly synthesised above instead of building again.
+      # No Docker needed: cdk-nextjs 0.7 deploys a zip Lambda.
+      - name: CDK deploy
+        if: github.event_name == 'push'
+        run: npx cdk deploy --app cdk.out --require-approval never --all
