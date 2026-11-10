@@ -21,6 +21,20 @@ interface MatchDetailsProps {
   match: Match;
 }
 
+const StatRow = ({ label, winnerValue, loserValue }: { label: string; winnerValue: string | number; loserValue: string | number }) => (
+  <Grid templateColumns="1fr 2fr 1fr" gap={4} py={3} alignItems="center">
+    <Text textAlign="right" fontWeight="semibold" color="green.600">
+      {winnerValue}
+    </Text>
+    <Text textAlign="center" color="gray.600" fontSize="sm">
+      {label}
+    </Text>
+    <Text textAlign="left" fontWeight="semibold" color="red.600">
+      {loserValue}
+    </Text>
+  </Grid>
+);
+
 const MatchDetails = ({ match }: MatchDetailsProps) => {
   const { getPresignedUrl } = useImageUpload();
   const [winnerImage, setWinnerImage] = useState<string | null>(null);
@@ -89,20 +103,6 @@ const MatchDetails = ({ match }: MatchDetailsProps) => {
     serviceGames: match.loserServeGames || 0,
     totalPoints: (match.loser1stServeWon || 0) + (match.loser2ndServeWon || 0),
   };
-
-  const StatRow = ({ label, winnerValue, loserValue }: { label: string; winnerValue: string | number; loserValue: string | number }) => (
-    <Grid templateColumns="1fr 2fr 1fr" gap={4} py={3} alignItems="center">
-      <Text textAlign="right" fontWeight="semibold" color="green.600">
-        {winnerValue}
-      </Text>
-      <Text textAlign="center" color="gray.600" fontSize="sm">
-        {label}
-      </Text>
-      <Text textAlign="left" fontWeight="semibold" color="red.600">
-        {loserValue}
-      </Text>
-    </Grid>
-  );
 
   return (
     <Box maxW="1000px" mx="auto" mt={10} p={6}>

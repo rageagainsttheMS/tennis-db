@@ -1,7 +1,11 @@
 'use server';
 import { prisma } from "@/db/prisma";
 import { ActionResult, Tournament } from "@/types";
+import { parseInput } from "@/lib/validation";
+import { tournamentInputSchema } from "@/lib/validation/tournament.schema";
+import { requireAdmin } from "@/lib/utils/auth-guards";
 
+const GENERIC_ERROR = "Something went wrong. Please try again.";
 
 export async function getTournaments(searchQuery?: string){
     return await prisma.tournament.findMany({
@@ -32,34 +36,37 @@ export async function getTournamentMatches(tournamentId: string) {
     return matches;
 }
 
-export async function createTournament(tournament: Tournament) {
+export async function createTournament(tournament: Tournament): Promise<ActionResult> {
+    const denied = await requireAdmin();
+    if (denied) return denied;
 
-    //find tourney ID from matches table
-    const tourneyID = await prisma.match.findFirst({
-        where: {
-            tourneyName: tournament.name
-        },
-        select: {
-            tourneyId: true
+    const parsed = parseInput(tournamentInputSchema, tournament);
+    if ("error" in parsed) return { success: false, message: parsed.error };
+
+    try {
+        // Link the tournament to the dataset through the tourney ID used in the matches table.
+        const match = await prisma.match.findFirst({
+            where: { tourneyName: parsed.data.name },
+            select: { tourneyId: true },
+        });
+
+        if (!match?.tourneyId) {
+            return {
+                success: false,
+                message: "Tournament not found in matches table",
+            };
         }
-    });
 
-    if(!tourneyID) {
+        const createdTournament = await prisma.tournament.create({
+            data: { ...parsed.data, id: match.tourneyId },
+        });
         return {
-            success: false,
-            message: "Tournament not found in matches table"
+            message: `Tournament ${createdTournament.name} created successfully`,
+            success: true,
+            id: createdTournament.id,
         };
+    } catch (error) {
+        console.error("createTournament failed", error);
+        return { success: false, message: GENERIC_ERROR };
     }
-
-    tournament.id = tourneyID.tourneyId ?? "";
-
-    const createdTournament = await prisma.tournament.create({
-        data: tournament
-    });
-    const result: ActionResult = {
-      message: `Tournament ${createdTournament?.name} created successfully`,
-      success: true,
-      id: createdTournament.id,
-    };
-    return result;
 }

@@ -2,16 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { Box, Center, Heading, Input, Flex } from "@chakra-ui/react";
 import { Tabs } from "@chakra-ui/react";
 import { getPlayers } from "@/lib/actions/player.actions";
 import { getTournaments } from "@/lib/actions/tournament.actions";
 import { PlayerWithID, Tournament } from "@/types";
-import { ROUTES } from "@/types/constants";
 
 export default function Home() {
-  const { data: session, status } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<PlayerWithID[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -19,13 +16,6 @@ export default function Home() {
   const [tournamentSearchResults, setTournamentSearchResults] = useState<Tournament[]>([]);
   const [showTournamentSuggestions, setShowTournamentSuggestions] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    if (status === "loading") return; // Still loading
-    if (!session) {
-      router.push(ROUTES.SIGNIN);
-    }
-  }, [session, status, router]);
 
   useEffect(() => {
     const debounceTimeout = setTimeout(() => {
@@ -84,14 +74,6 @@ export default function Home() {
     setTournamentSearchQuery("");
     router.push(`/tournament/${tournamentId}`);
   };
-
-  if (status === "loading") {
-    return <Center minH="80vh">Loading...</Center>;
-  }
-
-  if (!session) {
-    return null; // Will redirect
-  }
 
   return (
     <Center minH="80vh" flexDirection="column">

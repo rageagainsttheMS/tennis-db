@@ -44,3 +44,6 @@ cdk.out
 cdk-nextjs-cache-handler.cjs
 
 /app/generated/prisma
+
+# prisma generated client
+/generated/

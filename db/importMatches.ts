@@ -1,9 +1,12 @@
-const { prisma } = require('./prisma');
-const fs = require('fs');
-const { parse } = require('csv-parse');
+import fs from 'node:fs';
+import { parse } from 'csv-parse';
+import { prisma } from './prisma';
+import type { Prisma } from '../generated/prisma/client';
+
+type CsvRecord = Record<string, string>;
 
 async function importMatches() {
-  const records = [];
+  const records: Prisma.MatchCreateManyInput[] = [];
   const parser = fs.createReadStream('Match.csv').pipe(parse({ columns: true, trim: true }));
   for await (const record of parser) {
     records.push(mapMatchRecord(record));
@@ -16,7 +19,7 @@ async function importMatches() {
   console.log('Import complete!');
 }
 
-const mapMatchRecord = (record) => ({
+const mapMatchRecord = (record: CsvRecord): Prisma.MatchCreateManyInput => ({
   tourneyId: record.tourney_id,
   tourneyName: record.tourney_name,
   surface: record.surface,
@@ -48,7 +51,7 @@ const mapMatchRecord = (record) => ({
   loserRankPoints: record.loser_rank_points ? parseInt(record.loser_rank_points, 10) : null,
 
   score: record.score,
-  bestOf: record.best_of ? parseInt(record.best_of, 10) : null,
+  bestOf: parseInt(record.best_of, 10), // required column
   round: record.round,
   minutes: record.minutes ? parseInt(record.minutes, 10) : null,
 

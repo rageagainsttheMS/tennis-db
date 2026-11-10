@@ -32,7 +32,7 @@ export default function SignIn() {
               Welcome to Tennis DB!
             </Heading>
             <Text textAlign="center">
-              Sign in to your account to continue
+              Browsing is open to everyone. Sign in to manage players and tournaments.
             </Text>
           </Flex>
         </Flex>
@@ -40,7 +40,12 @@ export default function SignIn() {
         <Flex direction="column" gap={5}>
           <Button
             type="button"
-            onClick={() => signIn("google", { callbackUrl: "/" })}
+            onClick={() => {
+              // Only same-site paths, so the callback can't be used as an open redirect.
+              const requested = new URLSearchParams(window.location.search).get("callbackUrl");
+              const callbackUrl = requested?.startsWith("/") && !requested.startsWith("//") ? requested : "/";
+              signIn("google", { callbackUrl });
+            }}
             w="auto"
             px={4}
             py={2}

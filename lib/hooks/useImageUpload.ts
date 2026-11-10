@@ -4,27 +4,31 @@ export function useImageUpload() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  /** Uploads the file and resolves with its S3 object key (e.g. `players/123-abc.jpg`). */
   const uploadImage = async (file: File, folder: string = 'tournaments'): Promise<string> => {
     setUploading(true);
     setUploadProgress(0);
 
     try {
-      // Get presigned URL
+      // Get presigned URL. The server picks the key and signs the exact type and size.
       const response = await fetch('/api/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fileName: file.name,
           fileType: file.type,
+          fileSize: file.size,
           folder,
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to get upload URL');
+      if (!response.ok) {
+        const { error } = await response.json().catch(() => ({ error: undefined }));
+        throw new Error(error ?? 'Failed to get upload URL');
+      }
 
-      const { signedUrl, publicUrl } = await response.json();
+      const { signedUrl, key } = await response.json();
 
-      // Upload file to S3
+      // Upload file to S3. The browser sets Content-Length from the body, which must match the signed size.
       const uploadResponse = await fetch(signedUrl, {
         method: 'PUT',
         body: file,
@@ -34,7 +38,7 @@ export function useImageUpload() {
       if (!uploadResponse.ok) throw new Error('Failed to upload file');
 
       setUploadProgress(100);
-      return publicUrl;
+      return key;
     } catch (error) {
       console.error('Upload error:', error);
       throw error;

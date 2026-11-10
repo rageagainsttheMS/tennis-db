@@ -63,8 +63,7 @@ const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Matc
   fetchImageUrl();
  }, [player.image, getPresignedUrl]);
 
- const onImageUploadSuccess = (url: string) => {
-  const key = new URL(url).pathname.slice(1); // Remove leading slash
+ const onImageUploadSuccess = (key: string) => {
   setFormData(prev => ({ ...prev, image: key }));
 };
 

@@ -9,7 +9,7 @@ import { ADMINROLE, HIGHLIGHT_BORDER, HIGHLIGHT_BORDER_WIDTH, ROUTES } from "@/t
 
 function Header() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const pathname = usePathname();
   return (
     <Box as="header" width="100%" borderBottomWidth={1}>
@@ -39,6 +39,11 @@ function Header() {
               name={session?.user?.name ?? ""}
               role={session?.user?.role ?? ""}
             />
+          )}
+          {status === "unauthenticated" && pathname !== ROUTES.SIGNIN && (
+            <Button variant="subtle" size="sm" onClick={() => router.push(ROUTES.SIGNIN)}>
+              Admin sign in
+            </Button>
           )}
         </Flex>
       </Flex>

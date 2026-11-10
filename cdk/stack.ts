@@ -1,17 +1,7 @@
-import { Stack, StackProps } from "aws-cdk-lib";
+import { App, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { NextjsGlobalFunctions } from "cdk-nextjs";
-import { App } from "aws-cdk-lib";
 import { join } from "node:path";
-import { FckNatInstanceProvider } from "cdk-fck-nat";
-import {
-  InstanceClass,
-  InstanceSize,
-  InstanceType,
-  Peer,
-  Port,
-  Vpc,
-} from "aws-cdk-lib/aws-ec2";
 import {
   Bucket,
   BucketAccessControl,
@@ -19,7 +9,10 @@ import {
   BlockPublicAccess,
   HttpMethods,
 } from "aws-cdk-lib/aws-s3";
-import { RemovalPolicy } from "aws-cdk-lib";
+
+// Since cdk-nextjs 0.7 the server is a zip Lambda with its cache in S3/DynamoDB.
+// There is no EFS any more, so the function runs outside a VPC and reaches Neon
+// and Google OAuth directly. The VPC and fck-nat NAT instance aren't needed.
 
 class NextjsStack extends Stack {
   //#hostedZoneDomainName = "example.com";
@@ -27,16 +20,21 @@ class NextjsStack extends Stack {
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
-    const vpc = this.#createVpc();
     const s3Bucket = this.#createS3Bucket();
-    
+
     //const hostedZone = this.#getHostedZone();
     //const certificate = this.#getCertificate(hostedZone);
-    
+
     const nextjs = new NextjsGlobalFunctions(this, "Nextjs", {
-      healthCheckPath: "/api/health",
-      buildContext: join(__dirname, ".."),
+      buildDirectory: join(__dirname, ".."),
       overrides: {
+        nextjsFunctions: {
+          functionProps: {
+            environment: {
+              AWS_S3_BUCKET_NAME: s3Bucket.bucketName,
+            },
+          },
+        },
         // nextjsDistribution: {
         //   distributionProps: {
         //     certificate,
@@ -44,17 +42,12 @@ class NextjsStack extends Stack {
         //     priceClass: PriceClass.PRICE_CLASS_100,
         //   },
         // },
-        nextjsGlobalFunctions: {
-          nextjsVpcProps: {
-            vpc,
-          },
-        },
       },
     });
 
-    // Grant the Next.js Lambda functions read/write access to the S3 bucket
-    this.#grantS3Access(nextjs, s3Bucket);
-    
+    // Grant the Next.js Lambda function read/write access to the S3 bucket
+    s3Bucket.grantReadWrite(nextjs.nextjsFunctions.function);
+
     //this.#createDnsRecords(nextjs, hostedZone);
   }
 
@@ -63,29 +56,13 @@ class NextjsStack extends Stack {
   //     domainName: this.#hostedZoneDomainName,
   //   });
   // }
-  
+
   // #getCertificate(hostedZone: IHostedZone) {
   //   return new Certificate(this, "Certificate", {
   //     domainName: this.#distributionDomainName,
   //     validation: CertificateValidation.fromDns(hostedZone),
   //   });
   // }
-
-  #createVpc() {
-    const natGatewayProvider = new FckNatInstanceProvider({
-      instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.NANO),
-    });
-    const vpcName = this.stackName + "FckNatVpc";
-    const vpc = new Vpc(this, vpcName, {
-      natGatewayProvider,
-      vpcName,
-    });
-    natGatewayProvider.securityGroup.addIngressRule(
-      Peer.ipv4(vpc.vpcCidrBlock),
-      Port.allTraffic(),
-    );
-    return vpc;
-  }
 
   #createS3Bucket() {
     const bucket = new Bucket(this, "NextjsS3Bucket", {
@@ -106,15 +83,6 @@ class NextjsStack extends Stack {
 
     return bucket;
   }
-
-#grantS3Access(nextjs: NextjsGlobalFunctions, bucket: Bucket) {
-  if (nextjs.nextjsFunctions) {
-    // Grant access to individual functions
-    if (nextjs.nextjsFunctions.function) {
-      bucket.grantReadWrite(nextjs.nextjsFunctions.function);
-    }
-  }
-}
 
 //   #createDnsRecords(nextjs: NextjsGlobalFunctions, hostedZone: IHostedZone) {
 //     new ARecord(this, "ARecord", {
