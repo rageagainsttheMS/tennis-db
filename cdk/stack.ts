@@ -1,14 +1,8 @@
-import { App, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
+import { App, CfnOutput, Stack, StackProps } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { NextjsGlobalFunctions } from "cdk-nextjs";
 import { join } from "node:path";
-import {
-  Bucket,
-  BucketAccessControl,
-  BucketEncryption,
-  BlockPublicAccess,
-  HttpMethods,
-} from "aws-cdk-lib/aws-s3";
+import { createImagesBucket } from "./images-bucket";
 
 // Since cdk-nextjs 0.7 the server is a zip Lambda with its cache in S3/DynamoDB.
 // There is no EFS any more, so the function runs outside a VPC and reaches Neon
@@ -20,7 +14,8 @@ class NextjsStack extends Stack {
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
-    const s3Bucket = this.#createS3Bucket();
+    // Keep the "NextjsS3Bucket" ID: changing it would replace the deployed bucket.
+    const s3Bucket = createImagesBucket(this, "NextjsS3Bucket");
 
     //const hostedZone = this.#getHostedZone();
     //const certificate = this.#getCertificate(hostedZone);
@@ -48,6 +43,9 @@ class NextjsStack extends Stack {
     // Grant the Next.js Lambda function read/write access to the S3 bucket
     s3Bucket.grantReadWrite(nextjs.nextjsFunctions.function);
 
+    // Used by the deploy workflow's post-deploy smoke test.
+    new CfnOutput(this, "AppUrl", { value: nextjs.url });
+
     //this.#createDnsRecords(nextjs, hostedZone);
   }
 
@@ -63,27 +61,6 @@ class NextjsStack extends Stack {
   //     validation: CertificateValidation.fromDns(hostedZone),
   //   });
   // }
-
-  #createS3Bucket() {
-    // No fixed bucketName: CloudFormation generates a unique one, so a bucket left behind by an
-    // earlier stack can't block a fresh deploy. The app reads it from AWS_S3_BUCKET_NAME.
-    const bucket = new Bucket(this, "NextjsS3Bucket", {
-      encryption: BucketEncryption.S3_MANAGED,
-      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
-      accessControl: BucketAccessControl.PRIVATE,
-      versioned: true,
-      removalPolicy: RemovalPolicy.DESTROY, // Change to RETAIN for production
-      autoDeleteObjects: true, // Remove for production
-      // Add CORS for local development if needed
-      cors: [{
-        allowedMethods: [HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST],
-        allowedOrigins: ['http://localhost:3000'], // Your local dev server
-        allowedHeaders: ['*'],
-      }]
-    });
-
-    return bucket;
-  }
 
 //   #createDnsRecords(nextjs: NextjsGlobalFunctions, hostedZone: IHostedZone) {
 //     new ARecord(this, "ARecord", {

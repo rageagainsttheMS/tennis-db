@@ -21,8 +21,66 @@ env:
   CDK_DEFAULT_REGION: 'ap-southeast-2'
 
 jobs:
+  checks:
+    name: Lint, type-check and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      # Also runs `prisma generate` (postinstall).
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      # Unit tests (Vitest), Server Action tests with Prisma mocked, and CDK assertion tests.
+      - name: Unit tests
+        run: npm run test:coverage
+
+  e2e:
+    name: End-to-end smoke tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # No database in CI: the smoke tests only cover pages that don't query it.
+      - name: Build
+        run: npm run build
+
+      - name: Playwright
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
   deploy:
-    name: Check and deploy to AWS
+    name: Synth and deploy to AWS
+    needs: [checks, e2e]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -37,12 +95,6 @@ jobs:
       # Also runs `prisma generate` (postinstall).
       - name: Install dependencies
         run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Type-check
-        run: npm run typecheck
 
       # cdk-nextjs 0.7 stages `.env.production` into the Lambda package and loads it at
       # startup. Without this step the deployed app has no database or auth settings.
@@ -84,4 +136,14 @@ jobs:
       # No Docker needed: cdk-nextjs 0.7 deploys a zip Lambda.
       - name: CDK deploy
         if: github.event_name == 'push'
-        run: npx cdk deploy --app cdk.out --require-approval never --all
+        run: npx cdk deploy --app cdk.out --require-approval never --all --outputs-file cdk-outputs.json
+
+      # Fails the run if the new version doesn't serve the health route and a page that reads
+      # from the database.
+      - name: Smoke-test the live site
+        if: github.event_name == 'push'
+        run: |
+          url=$(jq -r '.nextjs.AppUrl' cdk-outputs.json)
+          echo "Testing $url"
+          curl --fail --silent --show-error --retry 5 --retry-delay 10 --retry-all-errors "$url/api/health"
+          curl --fail --silent --show-error --retry 3 --retry-delay 10 -o /dev/null "$url/match/1"

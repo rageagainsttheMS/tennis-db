@@ -26,9 +26,13 @@ The first tier below covers what those 5 minutes will catch. The later tiers are
 ### Tier 1: Fix what a reviewer will notice (do these first)
 
 #### 1. Let people browse without signing in
+**Done:** search, profiles, tournaments and matches are public. Sign-in is only needed for `/admin`. (The demo-admin mode below isn't built.)
+
 At the moment every page requires a Google login, so a recruiter who clicks the demo link stops at the sign-in screen. Make browsing (search, profiles, tournaments, matches) public and keep sign-in for admin features only. You could also add a **"Sign in as demo admin"** mode that has read-only admin views, or that writes to a sandbox and resets every night.
 
 #### 2. Close the authorization gaps
+**Done:** `requireAdmin()` guards every data-changing action, the upload route is admin-only with type, size and folder limits, `proxy.ts` and `app/admin/layout.tsx` check the role, admins come from `ADMIN_EMAILS`, and errors are generic.
+
 These are real security bugs, and an experienced reviewer will find them:
 
 | Problem | Where | Fix |
@@ -42,6 +46,8 @@ These are real security bugs, and an experienced reviewer will find them:
 Once these are fixed you can describe the work in an interview: *"I audited my own app and found that Server Actions were unauthenticated endpoints…"*
 
 #### 3. Add real tests
+**Done:** 84 Vitest tests (stats, validation, admin/auth guards, S3 key checks, upload and image-URL routes, Server Actions with Prisma mocked, CDK assertions on the images bucket) and 6 Playwright smoke tests. All run in CI before every deploy, and a post-deploy check hits the live site. Not done yet: integration tests against a real Postgres (Testcontainers or a Neon branch).
+
 `jest.config.js` exists, but Jest isn't installed and there's no `test/` folder. Reviewers will notice that. A testing stack that's in proportion to the project:
 - **Vitest + React Testing Library** for components and pure helpers, such as the serve % calculations in `MatchDetails` and the date formatting in `utils.ts`.
 - **Integration tests for Server Actions** against a real Postgres, using Testcontainers or a Neon branch made for each CI run. Test that a non-admin gets rejected, that a player links to the right matches, and so on.
@@ -52,7 +58,7 @@ Once these are fixed you can describe the work in an interview: *"I audited my o
 The current workflow has three problems:
 - ~~**It deploys to production on `pull_request`.**~~ **Done:** PRs now only run lint, type-check and `cdk synth`.
 - It uses **long-lived IAM access keys**.
-- It doesn't lint, type-check, test, or build before deploying.
+- ~~It doesn't lint, type-check, test, or build before deploying.~~ **Done:** lint, type-check, unit tests, build and e2e all gate the deploy.
 
 A better setup:
 - `ci.yml` runs on every PR: `npm ci` → `lint` → `tsc --noEmit` → tests → `next build` → `cdk synth` + `cdk diff`. Post the diff as a PR comment.

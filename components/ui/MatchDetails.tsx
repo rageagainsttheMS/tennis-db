@@ -4,6 +4,7 @@ import { Match } from "@/types";
 import { ROUND_TYPES } from "@/types/constants";
 import { getPlayerByMatchId } from "@/lib/actions/player.actions";
 import { useImageUpload } from "@/lib/hooks/useImageUpload";
+import { getServeStats } from "@/lib/stats/match-stats";
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -69,40 +70,8 @@ const MatchDetails = ({ match }: MatchDetailsProps) => {
     fetchPlayerImages();
   }, [match.winnerId, match.loserId, getPresignedUrl]);
 
-  // Parse the match statistics
-  const winnerStats = {
-    aces: match.winnerAces || 0,
-    doubleFaults: match.winnerDoubleFaults || 0,
-    firstServePercentage: match.winner1stServeIn && match.winnerServicePointsPlayed 
-      ? Math.round((match.winner1stServeIn / match.winnerServicePointsPlayed) * 100) 
-      : 0,
-    firstServeWinPercentage: match.winner1stServeIn && match.winner1stServeWon
-      ? Math.round((match.winner1stServeWon / match.winner1stServeIn) * 100)
-      : 0,
-    secondServeWinPercentage: match.winner1stServeIn && match.winnerServicePointsPlayed && match.winner2ndServeWon
-      ? Math.round((match.winner2ndServeWon / (match.winnerServicePointsPlayed - match.winner1stServeIn)) * 100)
-      : 0,
-    breakPoints: `${match.winnerBreakPointSaved || 0}/${match.winnerBreakPointFaced || 0}`,
-    serviceGames: match.winnerServeGames || 0,
-    totalPoints: (match.winner1stServeWon || 0) + (match.winner2ndServeWon || 0),
-  };
-
-  const loserStats = {
-    aces: match.loserAces || 0,
-    doubleFaults: match.loserDoubleFaults || 0,
-    firstServePercentage: match.loser1stServeIn && match.loserServicePointsPlayed 
-      ? Math.round((match.loser1stServeIn / match.loserServicePointsPlayed) * 100) 
-      : 0,
-    firstServeWinPercentage: match.loser1stServeIn && match.loser1stServeWon
-      ? Math.round((match.loser1stServeWon / match.loser1stServeIn) * 100)
-      : 0,
-    secondServeWinPercentage: match.loser1stServeIn && match.loserServicePointsPlayed && match.loser2ndServeWon
-      ? Math.round((match.loser2ndServeWon / (match.loserServicePointsPlayed - match.loser1stServeIn)) * 100)
-      : 0,
-    breakPoints: `${match.loserBreakPointSaved || 0}/${match.loserBreakPointFaced || 0}`,
-    serviceGames: match.loserServeGames || 0,
-    totalPoints: (match.loser1stServeWon || 0) + (match.loser2ndServeWon || 0),
-  };
+  const winnerStats = getServeStats(match, "winner");
+  const loserStats = getServeStats(match, "loser");
 
   return (
     <Box maxW="1000px" mx="auto" mt={10} p={6}>
@@ -256,9 +225,9 @@ const MatchDetails = ({ match }: MatchDetailsProps) => {
             <Separator />
             
             <StatRow 
-              label="Total points won" 
-              winnerValue={winnerStats.totalPoints} 
-              loserValue={loserStats.totalPoints} 
+              label="Service points won" 
+              winnerValue={winnerStats.servicePointsWon} 
+              loserValue={loserStats.servicePointsWon} 
             />
           </Box>
         </Card.Body>

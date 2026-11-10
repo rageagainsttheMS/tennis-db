@@ -47,3 +47,10 @@ cdk-nextjs-cache-handler.cjs
 
 # prisma generated client
 /generated/
+
+# test output
+/test-results/
+/playwright-report/
+/playwright/.cache/
+# local deploy outputs
+cdk-outputs.json
