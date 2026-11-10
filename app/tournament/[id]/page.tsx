@@ -1,5 +1,5 @@
 import { getTournamentById, getTournamentMatches } from "@/lib/actions/tournament.actions";
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import TournamentDetails from "@/components/ui/TournamentDetails";
 import { auth } from "@/auth";
 import { ADMINROLE } from "@/types/constants";
@@ -9,10 +9,6 @@ import Link from "next/link";
 const TournamentPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
   const session = await auth();
-  if(!session) {
-    redirect("/signin");
-  }
-
   const tournament = await getTournamentById(id);
   if (!tournament) {
     if (session?.user?.role === ADMINROLE) {
@@ -27,7 +23,7 @@ const TournamentPage = async ({ params }: { params: Promise<{ id: string }> }) =
         </Box>
       );
     } else {
-      redirect("/not-found");
+      notFound();
     }
   }
   const matches = await getTournamentMatches(tournament.id);

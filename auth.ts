@@ -2,6 +2,8 @@ import NextAuth from "next-auth";
 import { Session, User } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import Google from "next-auth/providers/google";
+import { ADMINROLE } from "@/types/constants";
+import { isAdminEmail } from "@/lib/utils/admin";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -10,10 +12,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.AUTH_GOOGLE_SECRET || "",
     }),
   ],
+  pages: {
+    signIn: "/signIn",
+  },
   callbacks: {
-     async jwt({ token, user }: { token: JWT; user: User }) {
+    async jwt({ token, user }: { token: JWT; user: User }) {
       if (user) {
-        token.role = user?.email === "williamawrigley@gmail.com" ? "admin" : "user";
+        token.role = isAdminEmail(user.email) ? ADMINROLE : "user";
       }
       return token;
     },

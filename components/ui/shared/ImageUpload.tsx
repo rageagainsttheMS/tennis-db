@@ -5,7 +5,7 @@ import { Box, Button, Input, Image, Text, Progress } from '@chakra-ui/react';
 import { useImageUpload } from '@/lib/hooks/useImageUpload';
 
 interface ImageUploadProps {
-  onImageUploaded: (url: string) => void;
+  onImageUploaded: (key: string) => void;
   currentImage?: string;
   folder?: string;
 }

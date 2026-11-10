@@ -64,8 +64,7 @@ export default function CreatePlayerPage() {
 
   const [isPending, startTransition] = useTransition();
 
-    const onImageUploadSuccess = (url: string) => {
-      const key = new URL(url).pathname.slice(1); // Remove leading slash
+    const onImageUploadSuccess = (key: string) => {
       setForm((prev) => ({ ...prev, image: key }));
   };
 
