@@ -25,90 +25,128 @@ enum TournamentType {
   ATPM1000
   ATP500
   ATP250
+  Finals
+  NextGen
   DavisCup
   LaverCup
+  TeamCup
+  Olympics
 }
 
+/// F to R128 are knockout rounds. RR = round robin / group stage, PO = knockout stage of a
+/// team event, TIE = Davis Cup / Laver Cup rubber, BR = bronze-medal match.
+enum Round {
+  F
+  SF
+  QF
+  R16
+  R32
+  R64
+  R128
+  RR
+  PO
+  TIE
+  BR
+}
+
+enum MatchStatus {
+  COMPLETED
+  RETIRED
+  WALKOVER
+  AWARDED
+}
+
+/// Created and named by the seed loader from the match data (tennisdata.app).
+/// The bio fields are optional extras entered by an admin.
 model Player {
-    id String @id @default(uuid())
-    playerMatchId String @unique
-    name String
-    nickName String?
-    hand  Hand
-    backHand Backhand
-    country  String
-    birthPlace String
-    turnedPro String
-    age String
-    rank Int
-    profile String
-    image String
+  id         String    @id @default(uuid())
+  /// The source's player ID, stable across seasons.
+  sourceId   String    @unique
+  /// Abbreviated, as the source gives it ("Dimitrov G."). Updated by every load.
+  name       String
+  /// Entered by an admin ("Grigor Dimitrov"). Shown instead of `name` when set.
+  fullName   String?
+  nickName   String?
+  hand       Hand?
+  backHand   Backhand?
+  country    String?
+  birthPlace String?
+  turnedPro  String?
+  age        String?
+  profile    String?
+  image      String?
+
+  wins   Match[] @relation("MatchWinner")
+  losses Match[] @relation("MatchLoser")
+
+  @@index([name])
 }
 
+/// One event across seasons, e.g. "roland-garros". Created by the seed loader.
 model Tournament {
-  id String @id @default(uuid())
-  name String
+  /// Slug from the event name, e.g. "roland-garros".
+  id             String         @id
+  name           String
+  /// Level in the most recent season loaded.
   tournamentType TournamentType
-  image String
-  drawSize Int
-  description String?
-  surface String
+  /// Surface in the most recent season loaded. Null for the Davis Cup.
+  surface        String?
+  indoor         Boolean        @default(false)
+  drawSize       Int?
+  description    String?
+  image          String?
+
+  matches Match[]
 }
 
 model Match {
-  id Int @id @default(autoincrement())
-  tourneyId        String?   @map("tourney_id")
-  tourneyName      String  @map("tourney_name")
-  surface           String
-  drawSize         String   @map("draw_size")
-  tourneyLevel     String @map("tourney_level")
-  tourneyDate      String @map("tourney_date")
-  matchNumber      Int? @map("match_num")
+  id               Int         @id @default(autoincrement())
+  /// The source's match ID.
+  sourceMatchId    String      @unique
+  season           Int
+  playedAt         DateTime
+  tournamentId     String
+  tournament       Tournament  @relation(fields: [tournamentId], references: [id])
+  /// Extra detail from the source, e.g. the host city or the Davis Cup group.
+  tournamentDetail String?
+  round            Round
+  /// "Hard", "Clay" or "Grass". Null for Davis Cup ties.
+  surface          String?
+  indoor           Boolean     @default(false)
+  status           MatchStatus
+  bestOf           Int
+  /// Winner's games first, e.g. "7-6 3-6 6-4", "6-3 2-0 RET" or "W/O".
+  score            String
 
-  winnerId         String? @map("winner_id")
-  winnerSeed       String?    @map("winner_seed")
-  winnerEntry      String?  @map("winner_entry")
-  winnerName       String  @map("winner_name")
-  winnerHand       String?  @map("winner_hand")
-  winnerHeight         Int?     @map("winner_ht")
-  winnerCountry        String?  @map("winner_ioc")
-  winnerAge        Float?  @map("winner_age")
-  winnerRank       Int?     @map("winner_rank")
-  winnerRankPoints Int?    @map("winner_rank_points")
+  winnerId String
+  winner   Player @relation("MatchWinner", fields: [winnerId], references: [id])
+  loserId  String
+  loser    Player @relation("MatchLoser", fields: [loserId], references: [id])
 
-  loserId          String? @map("loser_id")
-  loserSeed        String?    @map("loser_seed")
-  loserEntry       String?  @map("loser_entry")
-  loserName        String?  @map("loser_name")
-  loserHand        String? @map("loser_hand")
-  loserHeight      Int?    @map("loser_ht")
-  loserCountry     String? @map("loser_ioc")
-  loserAge        Float? @map("loser_age")
-  loserRank        Int?    @map("loser_rank")
-  loserRankPoints Int?     @map("loser_rank_points")
+  winnerRank          Int?
+  loserRank           Int?
+  winnerRankingPoints Int?
+  loserRankingPoints  Int?
+  winnerSets          Int?
+  loserSets           Int?
 
-  score             String?
-  bestOf            Int @map("best_of")
-  round             String
-  minutes           Int?
+  winnerAces                Int?
+  loserAces                 Int?
+  winnerDoubleFaults        Int?
+  loserDoubleFaults         Int?
+  /// Percentages are whole numbers from 0 to 100.
+  winnerServicePointsWonPct Int?
+  loserServicePointsWonPct  Int?
+  winnerReturnPointsWonPct  Int?
+  loserReturnPointsWonPct   Int?
+  winnerBreakPointsWonPct   Int?
+  loserBreakPointsWonPct    Int?
+  winnerBreakPointsSavedPct Int?
+  loserBreakPointsSavedPct  Int?
 
-  winnerAces          Int? @map("w_ace")
-  winnerDoubleFaults  Int? @map("w_df")
-  winnerServicePointsPlayed           Int? @map("w_svpt")
-  winner1stServeIn           Int?  @map("w_1stIn")
-  winner1stServeWon          Int? @map("w_1stWon")
-  winner2ndServeWon          Int?  @map("w_2ndWon")
-  winnerServeGames           Int? @map("w_SvGms")
-  winnerBreakPointSaved        Int?  @map("w_bpSaved")
-  winnerBreakPointFaced         Int?  @map("w_bpFaced")
-
-  loserAces             Int? @map("l_ace")
-  loserDoubleFaults              Int? @map("l_df")
-  loserServicePointsPlayed            Int? @map("l_svpt")
-  loser1stServeIn           Int? @map("l_1stIn")
-  loser1stServeWon          Int?  @map("l_1stWon")
-  loser2ndServeWon          Int? @map("l_2ndWon")
-  loserServeGames           Int? @map("l_SvGms")
-  loserBreakPointSaved         Int? @map("l_bpSaved")
-  loserBreakPointFaced         Int? @map("l_bpFaced")
+  @@index([winnerId, playedAt])
+  @@index([loserId, playedAt])
+  @@index([tournamentId, season])
+  @@index([season])
+  @@index([playedAt])
 }

@@ -66,10 +66,10 @@ A better setup:
 - Add Dependabot or Renovate, and CodeQL.
 
 #### 5. Clean up the codebase
-- **Done:** the CDK v1 packages and `@prisma/extension-accelerate` are removed, `aws-cdk-lib`/`constructs`/`aws-cdk` are explicit dependencies, and `@prisma/client` is a runtime dependency. Still to do: replace `moment` and drop one of `ts-node`/`tsx`. Original note: **Remove dependencies you don't use or that are wrong:** the CDK **v1** packages (`@aws-cdk/aws-cloudfront`, `aws-s3`, `aws-s3-deployment`), which are deprecated and mixed with v2; `@prisma/extension-accelerate`; `moment` (use `Intl` or `date-fns`); one of `ts-node`/`tsx`. Add `aws-cdk-lib` and `constructs` as explicit devDependencies, because right now they only arrive as peers of `cdk-nextjs`. Move `@prisma/client` from devDependencies to dependencies.
+- **Done:** the CDK v1 packages and `@prisma/extension-accelerate` are removed, `aws-cdk-lib`/`constructs`/`aws-cdk` are explicit dependencies, and `@prisma/client` is a runtime dependency. `moment` is removed (dates use `Intl`). Still to do: drop one of `ts-node`/`tsx`. Original note: **Remove dependencies you don't use or that are wrong:** the CDK **v1** packages (`@aws-cdk/aws-cloudfront`, `aws-s3`, `aws-s3-deployment`), which are deprecated and mixed with v2; `@prisma/extension-accelerate`; `moment` (use `Intl` or `date-fns`); one of `ts-node`/`tsx`. Add `aws-cdk-lib` and `constructs` as explicit devDependencies, because right now they only arrive as peers of `cdk-nextjs`. Move `@prisma/client` from devDependencies to dependencies.
 - **`.github/instructions/instructions.md`** was copied from a template. It mentions Solidity, Wagmi, Viem, TanStack Query and `next-safe-action`, none of which this project uses. Rewrite it for this stack or delete it.
 - **Migrations:** there are 18 migrations with names like `update`, `made` and `fix`. The data can be re-imported from the CSV, so squash them into a single clean `init` baseline.
-- **Done:** the import script is now `db/importMatches.ts` and runs with `npm run db:seed` (Prisma `seed` config). The README still describes the old `node db/importMatches.js` command.
+- **Done:** `Match.csv` and its import script are replaced by the tennisdata.app loader in `db/seed/` (`npm run db:seed`). See [new-seed-data-plan.md](new-seed-data-plan.md).
 - **Done:** `error.tsx`, `loading.tsx` and a `/api/health` route were added.
 - Validate all action and route inputs with **Zod**, and return a typed `ActionResult` consistently.
 

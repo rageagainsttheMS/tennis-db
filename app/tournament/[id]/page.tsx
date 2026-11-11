@@ -1,34 +1,27 @@
-import { getTournamentById, getTournamentMatches } from "@/lib/actions/tournament.actions";
 import { notFound } from "next/navigation";
 import TournamentDetails from "@/components/ui/TournamentDetails";
-import { auth } from "@/auth";
-import { ADMINROLE } from "@/types/constants";
-import { Box, Button, Text } from "@chakra-ui/react";
-import Link from "next/link";
+import { getTournamentById, getTournamentMatches, getTournamentSeasons } from "@/lib/actions/tournament.actions";
 
-const TournamentPage = async ({ params }: { params: Promise<{ id: string }> }) => {
+const TournamentPage = async ({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ season?: string }>;
+}) => {
   const { id } = await params;
-  const session = await auth();
-  const tournament = await getTournamentById(id);
-  if (!tournament) {
-    if (session?.user?.role === ADMINROLE) {
-      return (
-        <Box textAlign="center" mt={20}>
-          <Text>This tournament does not exist yet. Would you like to create it? </Text>
-           <Link href={`/admin/tournaments/create`}>
-             <Button mt={4} colorScheme="blue">
-            Create
-          </Button>
-           </Link>
-        </Box>
-      );
-    } else {
-      notFound();
-    }
-  }
-  const matches = await getTournamentMatches(tournament.id);
+  const { season: seasonParam } = await searchParams;
 
-  return <TournamentDetails tournament={tournament} matches={matches} />;
+  const tournament = await getTournamentById(id);
+  if (!tournament) notFound();
+
+  const seasons = await getTournamentSeasons(tournament.id);
+  // Default to the most recent season. An unknown ?season= falls back to it too.
+  const requested = Number(seasonParam);
+  const season = seasons.includes(requested) ? requested : (seasons[0] ?? null);
+  const matches = season === null ? [] : await getTournamentMatches(tournament.id, season);
+
+  return <TournamentDetails tournament={tournament} matches={matches} seasons={seasons} season={season} />;
 };
 
 export default TournamentPage;

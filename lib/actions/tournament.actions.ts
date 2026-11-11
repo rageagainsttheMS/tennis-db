@@ -1,72 +1,61 @@
-'use server';
+"use server";
 import { prisma } from "@/db/prisma";
-import { ActionResult, Tournament } from "@/types";
+import { ActionResult, MATCH_INCLUDE } from "@/types";
 import { parseInput } from "@/lib/validation";
-import { tournamentInputSchema } from "@/lib/validation/tournament.schema";
+import { tournamentInfoSchema, type TournamentInfoInput } from "@/lib/validation/tournament.schema";
 import { requireAdmin } from "@/lib/utils/auth-guards";
 
 const GENERIC_ERROR = "Something went wrong. Please try again.";
+const SEARCH_LIMIT = 20;
 
-export async function getTournaments(searchQuery?: string){
-    return await prisma.tournament.findMany({
-        where: searchQuery ? {
-            name: {
-                contains: searchQuery,
-                mode: 'insensitive'
-            }
-        } : undefined,
-        orderBy: {
-            name: 'asc'
-        }
-    })
+export async function getTournaments(searchQuery?: string) {
+  const query = searchQuery?.trim();
+  return prisma.tournament.findMany({
+    where: query ? { name: { contains: query, mode: "insensitive" } } : undefined,
+    orderBy: { name: "asc" },
+    take: query ? SEARCH_LIMIT : undefined,
+  });
 }
 
 export async function getTournamentById(id: string) {
-    const tournament = await prisma.tournament.findUnique({
-        where: { id }
-    });
-    return tournament;
+  if (typeof id !== "string" || !id) return null;
+  return prisma.tournament.findUnique({ where: { id } });
 }
 
-export async function getTournamentMatches(tournamentId: string) {
-    const matches = await prisma.match.findMany({
-        where: { tourneyId: tournamentId },
-        orderBy: { tourneyDate: 'desc' },
-    });
-    return matches;
+/** Seasons with at least one match at this tournament, most recent first. */
+export async function getTournamentSeasons(tournamentId: string): Promise<number[]> {
+  const rows = await prisma.match.findMany({
+    where: { tournamentId },
+    distinct: ["season"],
+    select: { season: true },
+    orderBy: { season: "desc" },
+  });
+  return rows.map((row) => row.season);
 }
 
-export async function createTournament(tournament: Tournament): Promise<ActionResult> {
-    const denied = await requireAdmin();
-    if (denied) return denied;
+export async function getTournamentMatches(tournamentId: string, season: number) {
+  return prisma.match.findMany({
+    where: { tournamentId, season },
+    include: MATCH_INCLUDE,
+    orderBy: { playedAt: "desc" },
+  });
+}
 
-    const parsed = parseInput(tournamentInputSchema, tournament);
-    if ("error" in parsed) return { success: false, message: parsed.error };
+/** Updates the admin-entered details. The name, level and surface come from the match data. */
+export async function updateTournament(id: string, input: TournamentInfoInput): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return denied;
 
-    try {
-        // Link the tournament to the dataset through the tourney ID used in the matches table.
-        const match = await prisma.match.findFirst({
-            where: { tourneyName: parsed.data.name },
-            select: { tourneyId: true },
-        });
+  if (typeof id !== "string" || !id) return { success: false, message: "Invalid tournament id." };
 
-        if (!match?.tourneyId) {
-            return {
-                success: false,
-                message: "Tournament not found in matches table",
-            };
-        }
+  const parsed = parseInput(tournamentInfoSchema, input);
+  if ("error" in parsed) return { success: false, message: parsed.error };
 
-        const createdTournament = await prisma.tournament.create({
-            data: { ...parsed.data, id: match.tourneyId },
-        });
-        return {
-            message: `Tournament ${createdTournament.name} created successfully`,
-            success: true,
-            id: createdTournament.id,
-        };
-    } catch (error) {
-        console.error("createTournament failed", error);
-        return { success: false, message: GENERIC_ERROR };
-    }
+  try {
+    const updated = await prisma.tournament.update({ where: { id }, data: parsed.data });
+    return { success: true, message: `Tournament ${updated.name} updated successfully`, id: updated.id };
+  } catch (error) {
+    console.error("updateTournament failed", error);
+    return { success: false, message: GENERIC_ERROR };
+  }
 }

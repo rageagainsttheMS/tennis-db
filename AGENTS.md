@@ -35,19 +35,23 @@ npm run lint                # eslint . (flat config in eslint.config.mjs)
 npm run typecheck           # tsc --noEmit
 npx prisma migrate dev      # after editing prisma/schema.prisma (no longer runs generate)
 npx prisma generate         # regenerate the client into generated/prisma
-npm run db:seed             # import Match.csv (db/importMatches.ts)
+npm run db:seed             # load seed-files/*.csv into DATABASE_URL (db/seed/load.ts); add -- --season 2026 for one season
+npm test                    # unit tests (Vitest)
+npm run test:e2e            # Playwright smoke tests against the production build
+npm run db:seed:dry-run     # convert seed-files/*.csv and print a report; never touches the database
 npx cdk synth               # validate infra without deploying (runs next build itself)
 ```
 
 - `npm install` runs `prisma generate` (postinstall). `generated/` is gitignored, so after a fresh clone, run that or `npm run build` before type-checking.
-- **No test suite exists yet.** Don't say tests pass when there are none. Check changes with `npm run lint`, `npm run typecheck` and `npm run build`.
+- **Tests:** `npm test` (Vitest: unit, Server Action and CDK tests in `tests/`) and `npm run test:e2e` (Playwright smoke tests in `e2e/`, after `npm run build`). Add or update tests with every behaviour change, and run `npm run lint`, `npm run typecheck` and `npm test` before calling work done.
+- **Windows:** run Vitest from PowerShell or from a shell whose working directory starts with an upper-case `C:\`. With a lower-case `c:\` path, Vitest loads twice and every suite fails with `Cannot read properties of undefined (reading 'config')`.
 - **Windows:** run `cdk synth`/`cdk deploy` from PowerShell, not Git Bash. cdk-nextjs shells out to `tar`, and Git Bash's GNU tar reads `C:\…` as a remote host and fails.
 
 ## Layout
 
 | Path | Contents |
 | --- | --- |
-| `app/` | App Router pages. `admin/` holds the create/edit pages (role-checked in `admin/layout.tsx`); `api/` holds the auth, upload, image-URL and health routes |
+| `app/` | App Router pages. `admin/` holds the player and tournament lists (role-checked in `admin/layout.tsx`); bios are edited on the profile and tournament pages. `api/` holds the auth, upload, image-URL and health routes |
 | `proxy.ts` | Next 16 middleware. Redirects non-admins away from `/admin/:path*` |
 | `components/ui/` | Feature components. `provider.tsx`, `color-mode.tsx`, `toaster.tsx` and `tooltip.tsx` are Chakra CLI snippets |
 | `lib/actions/` | Server Actions (`"use server"`). All DB reads and writes go through these |
@@ -71,8 +75,9 @@ Imports use the `@/` alias for the repo root, e.g. `@/lib/actions/player.actions
 - Import the client from `@/db/prisma`, and import Prisma types and enums from `@/generated/prisma/client`, **not** `@prisma/client`. Never create a new `PrismaClient`.
 - Validate action inputs with the Zod schemas in `lib/validation/`. TypeScript types aren't enough, because Server Actions accept any JSON.
 - Use Chakra UI v3 for UI and styling. Don't add Tailwind or another component library.
-- Match links to players and tournaments through IDs from the source dataset, not foreign keys: `Player.playerMatchId` ↔ `Match.winnerId`/`loserId`, and `Tournament.id` ↔ `Match.tourneyId`.
-- `Match` columns keep the CSV's snake_case names in the DB (`w_ace`, `l_bpFaced`, …) and are mapped to camelCase with `@map`. New fields follow the same pattern.
+- Players, tournaments and matches come from the tennisdata.app season files, loaded by `db/seed/`. Players are keyed by `sourceId`, tournaments by a slug, and matches by `sourceMatchId`, with foreign keys between them. Admins only edit bio fields (`lib/validation/`); never let a client set the source-owned fields (`sourceId`, `name`, level, surface).
+- Display a player with `displayName()` (`lib/utils/utils.ts`): the admin's full name if set, otherwise the source's abbreviated name.
+- Changing how the seed files are converted? Update `db/seed/normalize.ts` or `tournaments.ts`, add a test in `tests/unit/seed-normalize.test.ts`, and check `npm run db:seed:dry-run` before loading. Load into a Neon branch before production.
 - Don't hand-edit or delete existing migrations. Change `schema.prisma` and generate a new migration.
 - Don't use the edge runtime (`export const runtime = "edge"`). cdk-nextjs 0.7 fails the build on it.
 

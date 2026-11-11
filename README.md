@@ -4,7 +4,9 @@
 
 **Live site: https://d2t2gio7o197fi.cloudfront.net**
 
-TennisDB is a full-stack web app for exploring professional men's tennis statistics. It holds match-level data from the 2024 ATP season, about 2,800 matches from Brisbane in January to the ATP Finals in November, together with curated player and tournament profiles. You can search for a player or tournament, open a player's profile and match history, see every match played at a tournament, and look at the serve and break point statistics for a single match.
+TennisDB is a full-stack web app for exploring professional men's tennis statistics. It holds every ATP tour-level main-draw match from January 2021 to November 2026, about 16,700 matches between 767 players at 98 events, from the Grand Slams down to ATP 250s, plus the Davis Cup, the Laver Cup and the Olympics. You can search for a player or tournament, open a player's profile and match history, browse each tournament season by season, and look at the serve, return and break point statistics for a single match.
+
+Match data comes from [tennisdata.app](https://tennisdata.app/downloads/), which publishes free season files.
 
 This is a hobby project. It runs on serverless AWS infrastructure defined in code, and every change is tested and deployed by GitHub Actions.
 
@@ -15,7 +17,7 @@ This is a hobby project. It runs on serverless AWS infrastructure defined in cod
 - **Player profiles.** Each profile shows the player's bio (country, birthplace, year turned pro, playing hand, backhand style, current ranking) and every match they played, whether they won or lost.
 - **Tournament pages.** Each page shows the tournament's details (category, surface, draw size) and all of its matches, which you can filter by round.
 - **Match details.** Each match page compares the winner and loser side by side: aces, double faults, first serve %, points won on first and second serve, break points saved/faced, service games, and match length.
-- **Admin pages.** Admins sign in with Google (Auth.js v5) to create and edit players and tournaments and to upload their images. Admins are listed in the `ADMIN_EMAILS` environment variable.
+- **Admin pages.** Admins sign in with Google (Auth.js v5) to add bios, descriptions and images to the players and tournaments that the match data creates. Admins are listed in the `ADMIN_EMAILS` environment variable.
 - **Light and dark themes**, using Chakra UI and `next-themes`.
 
 ## Tech stack
@@ -48,23 +50,24 @@ flowchart LR
 - **Hosting.** [cdk/stack.ts](cdk/stack.ts) defines one CDK stack. `cdk-nextjs`'s `NextjsGlobalFunctions` builds the app with the Next.js Deployment Adapter API and deploys it as a zip Lambda behind CloudFront. The Next.js cache lives in S3 and DynamoDB. There's no VPC, so there are no fixed monthly costs, and the stack runs for roughly $0–1 a month at hobby traffic.
 - **Data access.** Every database read and write is a Server Action in [lib/actions/](lib/actions/), and they all share one Prisma client set up in [db/prisma.ts](db/prisma.ts).
 - **Security.** Server Actions are public HTTP endpoints, so every action that changes data checks for an admin session on the server (`requireAdmin()` in [lib/utils/auth-guards.ts](lib/utils/auth-guards.ts)) and validates its input with Zod ([lib/validation/](lib/validation/)). [proxy.ts](proxy.ts) and the admin layout also keep non-admins out of `/admin`. Image uploads go straight from the browser to a private S3 bucket through short-lived presigned URLs. Only admins can get one, and each URL is limited to one image of an allowed type and size, with a key the server chooses.
-- **Linking data.** Matches are connected to players and tournaments by their IDs in the source dataset. `Player.playerMatchId` is matched against `Match.winnerId` and `Match.loserId`. When you create a tournament in the admin pages, the app finds that tournament's `tourneyId` by looking up its name in the imported matches.
+- **Linking data.** The seed loader creates players and tournaments from the match data and links matches to them with foreign keys. Players are keyed by the source's player ID. Tournaments are keyed by a slug (`roland-garros`) that stays the same across seasons, and their qualifying, round-robin and knockout stages are combined into one event.
 
 ## Data model
 
 There are three models, defined in [prisma/schema.prisma](prisma/schema.prisma):
 
-- **Player**: bio and profile information entered through the admin pages, including playing hand (`LEFT`/`RIGHT`), backhand style (`ONEHANDED`/`TWOHANDED`), ranking, and image.
-- **Tournament**: name, category (`GS`, `ATPM1000`, `ATP500`, `ATP250`, `DavisCup`, `LaverCup`), surface, draw size, and image.
-- **Match**: a single match from the dataset. It includes tournament information, both players' entry details (seed, rank, age, height, country), the score, the round, the match length in minutes, and the full serve statistics for both players. In the database, the columns keep the source CSV's snake_case names (`w_ace`, `l_bpFaced`, and so on), and Prisma maps them to camelCase fields.
+- **Player**: created from the match data, with the source's ID and abbreviated name (`Alcaraz C.`). The bio fields (full name, playing hand, backhand, country, profile, image and so on) are optional and entered by an admin. Rankings come from the player's most recent match.
+- **Tournament**: one event across seasons, with its level (`GS`, `ATPM1000`, `ATP500`, `ATP250`, `Finals`, `NextGen`, `DavisCup`, `LaverCup`, `TeamCup`, `Olympics`), surface and indoor flag from the data, plus an admin-entered description, draw size and image.
+- **Match**: one main-draw match: season, date, round, surface, status (completed, retired, walkover or awarded), best of 3 or 5, the score, both players' rankings and ranking points, and their aces, double faults, and service points, return points, break points converted and break points saved as percentages. Indexed by player, tournament and season.
 
 ## Testing
 
 The tests run in CI on every pull request and before every deploy.
 
 **Unit tests (Vitest)**, in [tests/](tests/):
-- Serve-statistic calculations ([lib/stats/match-stats.ts](lib/stats/match-stats.ts)), including missing stats and divide-by-zero cases.
-- Zod input validation, including fields a client must not be able to set.
+- The seed converter and loader plan ([db/seed/](db/seed/)): tournament names, levels, rounds, winner/loser, walkovers, retirements and skipped rows.
+- Match statistics, rankings and win–loss records ([lib/stats/match-stats.ts](lib/stats/match-stats.ts)), including missing stats.
+- Zod input validation, including fields only the seed loader may set.
 - Admin and auth guards, and the S3 key checks that block path traversal.
 - The upload and image-URL API routes: non-admins get a 401, and bad file types, sizes and folders are refused.
 - Server Actions with Prisma mocked. Non-admins are rejected **before** any database call, and database errors never reach the client.
@@ -138,7 +141,7 @@ In the Google Cloud Console, add `http://localhost:3000/api/auth/callback/google
 ```bash
 npm install                  # also generates the Prisma client
 npx prisma migrate deploy
-npm run db:seed              # import Match.csv
+npm run db:seed              # load seed-files/*.csv (see Match data below)
 npm run dev
 ```
 
@@ -146,9 +149,15 @@ The app runs at http://localhost:3000.
 
 ### Match data
 
-`npm run db:seed` runs [db/importMatches.ts](db/importMatches.ts), which loads `Match.csv` from the project root. For a faster bulk load with `psql`, see the `\copy` command in [prisma/commands.txt](prisma/commands.txt).
+The season files (`2021-atp-season.csv` … `2026-atp-season.csv`) go in `seed-files/`. Download them from https://tennisdata.app/downloads/. They aren't committed, because the current season is updated hourly.
 
-Players and tournaments are not in the CSV. Add them through the admin pages.
+```bash
+npm run db:seed:dry-run               # what would be loaded and skipped; never touches the database
+npm run db:seed                       # load every season
+npm run db:seed -- --season 2026      # reload one season, e.g. for new results
+```
+
+Only ATP tour-level main draws are loaded: Challenger events, qualifying, exhibitions, cancelled and scheduled matches are skipped. The loader is safe to re-run: matches are upserted by the source's match ID, so match pages keep the same URL. The conversion rules (tournament names, levels, rounds, best of 3 or 5) are in [db/seed/](db/seed/) and covered by unit tests. [docs/new-seed-data-plan.md](docs/new-seed-data-plan.md) explains them.
 
 ## Deployment
 
@@ -188,5 +197,6 @@ npx cdk deploy
 | `npm run test:watch` | Run the unit tests in watch mode |
 | `npm run test:coverage` | Run the unit tests with a coverage report |
 | `npm run test:e2e` | Run the Playwright end-to-end tests |
-| `npm run db:seed` | Import `Match.csv` into the database |
+| `npm run db:seed` | Load the season files in `seed-files/` into the database |
+| `npm run db:seed:dry-run` | Report what `db:seed` would load, without touching the database |
 | `npm run deploy` | Deploy to AWS with CDK (from Linux or macOS) |

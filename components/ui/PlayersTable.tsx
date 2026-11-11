@@ -1,40 +1,46 @@
-'use client'
+"use client";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Button, Flex, Table } from "@chakra-ui/react";
-import { ROUTES } from "@/types/constants";
-import Link from "next/link";
-import { PlayerWithID } from "@/types";
+import { Badge, Box, Input, Table, Text } from "@chakra-ui/react";
+import type { Player } from "@/types";
+import { displayName } from "@/lib/utils/utils";
 
-const PlayersTable = ({ players }: { players: PlayerWithID[] }) => {
+function hasBio(player: Player) {
+  return Boolean(player.fullName || player.profile || player.image || player.country);
+}
+
+/** Admin list of every player. Players come from the match data; open one to edit their bio. */
+const PlayersTable = ({ players }: { players: Player[] }) => {
   const router = useRouter();
+  const [filter, setFilter] = useState("");
+  const query = filter.trim().toLowerCase();
+  const visible = query
+    ? players.filter((player) => player.name.toLowerCase().includes(query) || player.fullName?.toLowerCase().includes(query))
+    : players;
 
   return (
-    <Box mx="auto" ml={10} mt={8}>
-      <Flex justify="flex-end" mx={4}>
-        <Link href={ROUTES.PLAYERCREATE} passHref>
-          <Button colorScheme="green" size="sm">
-            Create Player
-          </Button>
-        </Link>
-      </Flex>
-      <Table.Root>
+    <Box mx="auto" maxW="1000px" mt={8} px={4}>
+      <Text color="gray.600" mb={4}>
+        Players are created from the match data. Open a player to add or edit their bio.
+      </Text>
+      <Input mb={4} placeholder="Filter players..." value={filter} onChange={(e) => setFilter(e.target.value)} />
+      <Text fontSize="sm" color="gray.600" mb={2}>
+        {visible.length} of {players.length} players · {players.filter(hasBio).length} with a bio
+      </Text>
+      <Table.Root size="sm">
         <Table.Header>
           <Table.Row>
-            <Table.ColumnHeader>Player Name</Table.ColumnHeader>
-            <Table.ColumnHeader>Age</Table.ColumnHeader>
-            <Table.ColumnHeader>Ranking</Table.ColumnHeader>
+            <Table.ColumnHeader>Name</Table.ColumnHeader>
+            <Table.ColumnHeader>Listed as</Table.ColumnHeader>
+            <Table.ColumnHeader>Bio</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
         <Table.Body>
-          {players.map((player: PlayerWithID) => (
-            <Table.Row
-              key={player.id}
-              onClick={() => router.push(`/profile/${player.id}`)}
-              _hover={{ bg: "gray.100", cursor: "pointer" }}
-            >
-              <Table.Cell>{player.name}</Table.Cell>
-              <Table.Cell>{player.age}</Table.Cell>
-              <Table.Cell>{player.rank}</Table.Cell>
+          {visible.map((player) => (
+            <Table.Row key={player.id} onClick={() => router.push(`/profile/${player.id}`)} _hover={{ bg: "gray.100", cursor: "pointer" }}>
+              <Table.Cell>{displayName(player)}</Table.Cell>
+              <Table.Cell color="gray.600">{player.name}</Table.Cell>
+              <Table.Cell>{hasBio(player) ? <Badge colorPalette="green">Entered</Badge> : "-"}</Table.Cell>
             </Table.Row>
           ))}
         </Table.Body>
@@ -44,4 +50,3 @@ const PlayersTable = ({ players }: { players: PlayerWithID[] }) => {
 };
 
 export default PlayersTable;
-

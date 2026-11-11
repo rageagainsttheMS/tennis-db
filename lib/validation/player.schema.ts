@@ -1,24 +1,37 @@
 import { z } from "zod";
 import { Backhand, Hand } from "@/generated/prisma/client";
 
-const text = (max: number) => z.string().trim().max(max);
+/** Optional text: trimmed, with an empty value stored as null ("not entered"). */
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullish()
+    .transform((value) => value || null);
+
+/** An enum select where the empty option means "not entered". */
+const optionalEnum = <T extends Record<string, string>>(values: T, message: string) =>
+  z.preprocess((value) => (value === "" || value === undefined ? null : value), z.enum(values, { error: message }).nullable());
 
 /**
- * Fields a client may set on a player. Server Actions accept any JSON from anyone, so this
- * is the real contract. Unknown keys such as `id` or `playerMatchId` are stripped.
+ * Fields an admin may set on a player. Players are created by the seed loader, so the source's
+ * ID and name are never taken from the client: unknown keys such as `sourceId`, `name` and `id`
+ * are stripped. Server Actions accept any JSON from anyone, so this is the real contract.
  */
-export const playerInputSchema = z.object({
-  name: text(120).min(1, "Name is required."),
-  nickName: text(120).optional().transform((v) => v || null),
-  hand: z.enum(Hand, { error: "Invalid hand." }),
-  backHand: z.enum(Backhand, { error: "Invalid backhand." }),
-  country: text(80).default(""),
-  birthPlace: text(120).default(""),
-  turnedPro: text(20).default(""),
-  age: text(20).default(""),
-  rank: z.coerce.number({ error: "Rank must be a whole number." }).int("Rank must be a whole number.").min(0),
-  profile: text(10_000).default(""),
-  image: text(512).default(""),
+export const playerBioSchema = z.object({
+  fullName: optionalText(120),
+  nickName: optionalText(120),
+  hand: optionalEnum(Hand, "Invalid hand."),
+  backHand: optionalEnum(Backhand, "Invalid backhand."),
+  country: optionalText(80),
+  birthPlace: optionalText(120),
+  turnedPro: optionalText(20),
+  age: optionalText(20),
+  profile: optionalText(10_000),
+  image: optionalText(512),
 });
 
-export type PlayerInput = z.infer<typeof playerInputSchema>;
+export type PlayerBio = z.output<typeof playerBioSchema>;
+/** What the bio form sends: any field may be missing, empty or null. */
+export type PlayerBioInput = Partial<Record<keyof PlayerBio, string | null>>;

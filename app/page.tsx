@@ -6,11 +6,12 @@ import { Box, Center, Heading, Input, Flex } from "@chakra-ui/react";
 import { Tabs } from "@chakra-ui/react";
 import { getPlayers } from "@/lib/actions/player.actions";
 import { getTournaments } from "@/lib/actions/tournament.actions";
-import { PlayerWithID, Tournament } from "@/types";
+import type { Player, Tournament } from "@/types";
+import { displayName } from "@/lib/utils/utils";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<PlayerWithID[]>([]);
+  const [searchResults, setSearchResults] = useState<Player[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [tournamentSearchQuery, setTournamentSearchQuery] = useState("");
   const [tournamentSearchResults, setTournamentSearchResults] = useState<Tournament[]>([]);
@@ -134,7 +135,7 @@ export default function Home() {
                       borderColor="gray.200"
                       onClick={() => handlePlayerSelect(player.id)}
                     >
-                      <Box fontWeight="medium">{player.name}</Box>
+                      <Box fontWeight="medium">{displayName(player)}</Box>
                     </Box>
                   ))}
                 </Box>

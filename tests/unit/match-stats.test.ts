@@ -1,81 +1,103 @@
 import { describe, expect, it } from "vitest";
-import { getServeStats, percentage } from "@/lib/stats/match-stats";
+import { getSideStats, getStatRows, latestRank, winLoss } from "@/lib/stats/match-stats";
 import { makeMatch } from "../helpers/fixtures";
 
-describe("percentage", () => {
-  it("rounds to a whole number", () => {
-    expect(percentage(1, 3)).toBe(33);
-    expect(percentage(2, 3)).toBe(67);
-  });
-
-  it.each([
-    [5, 0],
-    [5, null],
-    [null, 10],
-    [0, 10],
-    [5, -1],
-  ])("returns 0 for part=%s, whole=%s", (part, whole) => {
-    expect(percentage(part, whole)).toBe(0);
+describe("getSideStats", () => {
+  it("reads each side's own columns", () => {
+    expect(getSideStats(makeMatch(), "winner")).toEqual({
+      aces: 12,
+      doubleFaults: 2,
+      servicePointsWonPct: 73,
+      returnPointsWonPct: 39,
+      breakPointsWonPct: 50,
+      breakPointsSavedPct: 100,
+    });
+    expect(getSideStats(makeMatch(), "loser")).toEqual({
+      aces: 5,
+      doubleFaults: 4,
+      servicePointsWonPct: 61,
+      returnPointsWonPct: 27,
+      breakPointsWonPct: 0,
+      breakPointsSavedPct: 50,
+    });
   });
 });
 
-describe("getServeStats", () => {
-  it("computes the winner's serve stats", () => {
-    expect(getServeStats(makeMatch(), "winner")).toEqual({
-      aces: 12,
-      doubleFaults: 2,
-      firstServePercentage: 63, // 50 / 80
-      firstServeWinPercentage: 80, // 40 / 50
-      secondServeWinPercentage: 60, // 18 / (80 - 50)
-      breakPoints: "3/4",
-      serviceGames: 11,
-      servicePointsWon: 58, // 40 + 18
-    });
+describe("getStatRows", () => {
+  it("formats counts and percentages, keeping a real zero", () => {
+    expect(getStatRows(makeMatch())).toEqual([
+      { label: "Aces", winner: "12", loser: "5" },
+      { label: "Double faults", winner: "2", loser: "4" },
+      { label: "Service points won", winner: "73%", loser: "61%" },
+      { label: "Return points won", winner: "39%", loser: "27%" },
+      { label: "Break points converted", winner: "50%", loser: "0%" },
+      { label: "Break points saved", winner: "100%", loser: "50%" },
+    ]);
   });
 
-  it("computes the loser's serve stats from the loser columns", () => {
-    expect(getServeStats(makeMatch(), "loser")).toEqual({
-      aces: 5,
-      doubleFaults: 4,
-      firstServePercentage: 50, // 35 / 70
-      firstServeWinPercentage: 71, // 25 / 35
-      secondServeWinPercentage: 40, // 14 / (70 - 35)
-      breakPoints: "1/2",
-      serviceGames: 10,
-      servicePointsWon: 39,
-    });
+  it("shows a dash when only one player has a value", () => {
+    const rows = getStatRows(makeMatch({ loserAces: null }));
+
+    expect(rows.find((row) => row.label === "Aces")).toEqual({ label: "Aces", winner: "12", loser: "-" });
   });
 
-  it("treats missing stats as zero (walkovers and retirements have none)", () => {
-    const match = makeMatch({
-      winnerAces: null,
-      winnerDoubleFaults: null,
-      winnerServicePointsPlayed: null,
-      winner1stServeIn: null,
-      winner1stServeWon: null,
-      winner2ndServeWon: null,
-      winnerServeGames: null,
-      winnerBreakPointSaved: null,
-      winnerBreakPointFaced: null,
-    });
+  it("leaves out a statistic neither player has", () => {
+    const rows = getStatRows(makeMatch({ winnerBreakPointsSavedPct: null, loserBreakPointsSavedPct: null }));
 
-    expect(getServeStats(match, "winner")).toEqual({
-      aces: 0,
-      doubleFaults: 0,
-      firstServePercentage: 0,
-      firstServeWinPercentage: 0,
-      secondServeWinPercentage: 0,
-      breakPoints: "0/0",
-      serviceGames: 0,
-      servicePointsWon: 0,
-    });
+    expect(rows.map((row) => row.label)).not.toContain("Break points saved");
   });
 
-  it("doesn't divide by zero when every first serve went in", () => {
-    const match = makeMatch({ winnerServicePointsPlayed: 50, winner1stServeIn: 50, winner2ndServeWon: 0 });
-    const stats = getServeStats(match, "winner");
+  it("returns no rows for a walkover, which has no statistics", () => {
+    const empty = {
+      winnerAces: null, loserAces: null, winnerDoubleFaults: null, loserDoubleFaults: null,
+      winnerServicePointsWonPct: null, loserServicePointsWonPct: null, winnerReturnPointsWonPct: null,
+      loserReturnPointsWonPct: null, winnerBreakPointsWonPct: null, loserBreakPointsWonPct: null,
+      winnerBreakPointsSavedPct: null, loserBreakPointsSavedPct: null,
+    };
 
-    expect(stats.secondServeWinPercentage).toBe(0);
-    expect(Number.isFinite(stats.secondServeWinPercentage)).toBe(true);
+    expect(getStatRows(makeMatch({ status: "WALKOVER", ...empty }))).toEqual([]);
+  });
+});
+
+describe("latestRank", () => {
+  const me = "player-dimitrov";
+
+  it("uses the player's rank at their most recent match, from either side", () => {
+    const matches = [
+      makeMatch({ playedAt: new Date("2024-01-07"), winnerId: me, winnerRank: 14 }),
+      makeMatch({ playedAt: new Date("2024-06-01"), winnerId: "other", loserId: me, loserRank: 10 }),
+      makeMatch({ playedAt: new Date("2024-03-01"), winnerId: me, winnerRank: 12 }),
+    ];
+
+    expect(latestRank(matches, me)).toEqual({ rank: 10, asOf: new Date("2024-06-01") });
+  });
+
+  it("skips matches where the source has no rank", () => {
+    const matches = [
+      makeMatch({ playedAt: new Date("2024-06-01"), winnerId: me, winnerRank: null }),
+      makeMatch({ playedAt: new Date("2024-01-07"), winnerId: me, winnerRank: 14 }),
+    ];
+
+    expect(latestRank(matches, me)?.rank).toBe(14);
+  });
+
+  it("returns null when no match has a rank", () => {
+    expect(latestRank([makeMatch({ winnerId: me, winnerRank: null })], me)).toBeNull();
+    expect(latestRank([], me)).toBeNull();
+  });
+});
+
+describe("winLoss", () => {
+  it("counts wins and losses, but not walkovers", () => {
+    const me = "player-dimitrov";
+    const matches = [
+      makeMatch({ winnerId: me }),
+      makeMatch({ winnerId: me }),
+      makeMatch({ winnerId: "other", loserId: me }),
+      makeMatch({ winnerId: me, status: "WALKOVER" }),
+      makeMatch({ winnerId: me, status: "RETIRED" }),
+    ];
+
+    expect(winLoss(matches, me)).toEqual({ wins: 3, losses: 1 });
   });
 });

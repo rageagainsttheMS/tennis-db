@@ -5,7 +5,7 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
-    seed: "tsx db/importMatches.ts",
+    seed: "tsx db/seed/load.ts",
   },
   datasource: {
     // process.env instead of env() so `prisma generate` still works in CI and

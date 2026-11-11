@@ -1,23 +1,34 @@
 import { z } from "zod";
-import { TournamentType } from "@/generated/prisma/client";
 
-const text = (max: number) => z.string().trim().max(max);
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullish()
+    .transform((value) => value || null);
 
 /**
- * Fields a client may set on a tournament. The id is never taken from the client
- * (it comes from the matches table), so it's stripped along with any other unknown key.
+ * Fields an admin may set on a tournament. Tournaments are created by the seed loader, which
+ * also owns the name, level and surface, so those (and the id) are stripped if a client sends them.
  */
-export const tournamentInputSchema = z.object({
-  name: text(120).min(1, "Name is required."),
-  tournamentType: z.enum(TournamentType, { error: "Invalid tournament type." }),
-  drawSize: z.coerce
-    .number({ error: "Draw size must be a number." })
-    .int()
-    .min(2, "Draw size must be between 2 and 256.")
-    .max(256, "Draw size must be between 2 and 256."),
-  surface: text(40).default(""),
-  description: text(10_000).nullish().transform((v) => v || null),
-  image: text(512).default(""),
+export const tournamentInfoSchema = z.object({
+  description: optionalText(10_000),
+  image: optionalText(512),
+  drawSize: z.preprocess(
+    (value) => (value === "" || value === undefined || value === 0 ? null : value),
+    z.coerce
+      .number({ error: "Draw size must be a number." })
+      .int("Draw size must be a whole number.")
+      .min(2, "Draw size must be between 2 and 256.")
+      .max(256, "Draw size must be between 2 and 256.")
+      .nullable()
+  ),
 });
 
-export type TournamentInput = z.infer<typeof tournamentInputSchema>;
+/** What the tournament form sends: any field may be missing, empty or null. */
+export type TournamentInfoInput = {
+  description?: string | null;
+  image?: string | null;
+  drawSize?: string | number | null;
+};

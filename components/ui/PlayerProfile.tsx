@@ -1,390 +1,249 @@
 "use client";
 
-import { updatePlayer } from "@/lib/actions/player.actions";
-import { formatBackhand, formatHand } from "@/lib/utils/utils";
-import { Match, PlayerWithID } from "@/types";
-import { ADMINROLE, PLAYER_BACKHAND, PLAYER_HAND } from "@/types/constants";
-import {
-  Box,
-  Heading,
-  Text,
-  Grid,
-  GridItem,
-  Flex,
-  Tabs,
-  Button,
-  Input,
-  Textarea,
-  Select,
-  Image,
-} from "@chakra-ui/react";
-import { createListCollection } from "@chakra-ui/react";
-import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useEffect } from "react";
-import { toaster } from "./toaster";
+import { useSession } from "next-auth/react";
+import { Box, Button, Flex, Grid, GridItem, Heading, Image, Input, NativeSelect, Tabs, Text, Textarea } from "@chakra-ui/react";
+import type { MatchWithPlayers, Player } from "@/types";
+import { ADMINROLE, PLAYER_BACKHAND, PLAYER_HAND } from "@/types/constants";
+import { updatePlayer } from "@/lib/actions/player.actions";
+import { useImageUpload } from "@/lib/hooks/useImageUpload";
+import { latestRank, winLoss } from "@/lib/stats/match-stats";
+import { displayName, formatBackhand, formatHand, formatMatchDate } from "@/lib/utils/utils";
 import MatchesTable from "./MatchesTable";
 import { ImageUpload } from "./shared/ImageUpload";
-import { useImageUpload } from "@/lib/hooks/useImageUpload";
+import { toaster } from "./toaster";
 
+type BioForm = {
+  fullName: string;
+  nickName: string;
+  hand: string;
+  backHand: string;
+  country: string;
+  birthPlace: string;
+  turnedPro: string;
+  age: string;
+  profile: string;
+  image: string;
+};
 
-const PlayerProfile = ({player, matches} : {player : PlayerWithID, matches: Match[]}) => {
+function toForm(player: Player): BioForm {
+  return {
+    fullName: player.fullName ?? "",
+    nickName: player.nickName ?? "",
+    hand: player.hand ?? "",
+    backHand: player.backHand ?? "",
+    country: player.country ?? "",
+    birthPlace: player.birthPlace ?? "",
+    turnedPro: player.turnedPro ?? "",
+    age: player.age ?? "",
+    profile: player.profile ?? "",
+    image: player.image ?? "",
+  };
+}
+
+const TEXT_FIELDS: { name: keyof BioForm; label: string; placeholder?: string }[] = [
+  { name: "fullName", label: "Full name", placeholder: "e.g. Carlos Alcaraz" },
+  { name: "nickName", label: "Nickname" },
+  { name: "country", label: "Country" },
+  { name: "birthPlace", label: "Birth place" },
+  { name: "turnedPro", label: "Turned pro", placeholder: "Year, e.g. 2018" },
+  { name: "age", label: "Age" },
+];
+
+const Detail = ({ label, value }: { label: string; value: React.ReactNode }) => (
+  <GridItem bg="gray.50" p={3} borderRadius="md">
+    <Text fontWeight="bold">{label}</Text>
+    <Text>{value || "-"}</Text>
+  </GridItem>
+);
+
+const PlayerProfile = ({ player, matches }: { player: Player; matches: MatchWithPlayers[] }) => {
   const { data: session } = useSession();
   const router = useRouter();
+  const isAdmin = session?.user?.role === ADMINROLE;
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({
-    name: player.name,
-    nickName: player.nickName || "",
-    age: player.age,
-    country: player.country,
-    hand: player.hand,
-    backHand: player.backHand,
-    rank: player.rank,
-    profile: player.profile,
-    image: player.image || "",
-    birthPlace: player.birthPlace || "",
-    turnedPro: player.turnedPro || "",
-  });
+  const [form, setForm] = useState<BioForm>(() => toForm(player));
+  const [saving, setSaving] = useState(false);
 
   const { getPresignedUrl } = useImageUpload();
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (!player.image) return;
+    getPresignedUrl(player.image)
+      .then(setImageSrc)
+      .catch((error) => console.error("Failed to get image URL:", error));
+  }, [player.image, getPresignedUrl]);
 
- useEffect(() => {
-  if (!player.image) return;
-  const fetchImageUrl = async () => {
-    try {
-      const viewUrl = await getPresignedUrl(player.image);
-      setImageSrc(viewUrl);
-    } catch (error) {
-      console.error('Failed to get image URL:', error);
-    }
-  }
-  fetchImageUrl();
- }, [player.image, getPresignedUrl]);
+  const rank = latestRank(matches, player.id);
+  const record = winLoss(matches, player.id);
+  const name = displayName(player);
 
- const onImageUploadSuccess = (key: string) => {
-  setFormData(prev => ({ ...prev, image: key }));
-};
-
-  const isAdmin = session?.user?.role === ADMINROLE;
-
-  const handCollection = createListCollection({
-    items: PLAYER_HAND.map((hand) => ({
-      label: hand.TEXT,
-      value: hand.ID,
-    })),
-  });
-
-  const bhCollection = createListCollection({
-    items: PLAYER_BACKHAND.map((hand) => ({
-      label: hand.TEXT,
-      value: hand.ID,
-    })),
-  });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'rank' ? parseInt(value) || 0 : value
-    }));
-  };
+  const update = (field: keyof BioForm, value: string) => setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleSave = async () => {
-    const result = await updatePlayer(player.id, formData)
-     if (!result.success) {
-        toaster.create({
-            title: "Error",
-            description: result.message,
-            duration: 5000
-       });
-    } else {
-        toaster.create({
-            title: "Success",
-            description : result.message,
-            duration: 2000
-        });
-        
-        // Refresh the page to get updated data
-        router.refresh();
+    setSaving(true);
+    const result = await updatePlayer(player.id, form);
+    setSaving(false);
+    toaster.create({ title: result.success ? "Saved" : "Error", description: result.message, duration: result.success ? 2000 : 5000 });
+    if (result.success) {
+      setEditMode(false);
+      router.refresh();
     }
-
-    setEditMode(false);
   };
 
   const handleCancel = () => {
-    setFormData({
-      name: player.name,
-      age: player.age,
-      country: player.country,
-      hand: player.hand,
-      backHand: player.backHand,
-      rank: player.rank,
-      profile: player.profile,
-      image: player.image || "",
-      birthPlace: player.birthPlace || "",
-      turnedPro: player.turnedPro || "",
-      nickName: player.nickName || "",
-    });
+    setForm(toForm(player));
     setEditMode(false);
   };
 
   return (
-    <Box mx="auto" mt={10} maxW="1200px">
-      <Flex justify="space-between" align="center" mb={4}>
-        <Heading as="h1" size="4xl">
-          {player.name}
-        </Heading>
+    <Box mx="auto" mt={10} maxW="1200px" px={4}>
+      <Flex justify="space-between" align="center" mb={2} gap={4} wrap="wrap">
+        <Box>
+          <Heading as="h1" size="4xl">
+            {name}
+          </Heading>
+          {player.fullName && (
+            <Text color="gray.500" fontSize="sm">
+              Listed as {player.name}
+            </Text>
+          )}
+        </Box>
         {isAdmin && (
-          <Box>
+          <Flex gap={2}>
             {editMode ? (
-              <Flex gap={2}>
-                <Button colorScheme="green" size="sm" onClick={handleSave}>
+              <>
+                <Button colorPalette="green" size="sm" onClick={handleSave} loading={saving}>
                   Save
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleCancel}>
+                <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
                   Cancel
                 </Button>
-              </Flex>
+              </>
             ) : (
-              <Button colorScheme="blue" size="sm" onClick={() => setEditMode(true)}>
-                Edit
+              <Button colorPalette="blue" size="sm" onClick={() => setEditMode(true)}>
+                Edit bio
               </Button>
             )}
-          </Box>
+          </Flex>
         )}
       </Flex>
-      
-      <Tabs.Root defaultValue="overview" mb={8}>
+
+      <Flex gap={6} mb={6} color="gray.700" wrap="wrap">
+        <Text>
+          <b>Ranking:</b> {rank ? `${rank.rank} (as of ${formatMatchDate(rank.asOf)})` : "-"}
+        </Text>
+        <Text>
+          <b>Record since 2021:</b> {record.wins}–{record.losses}
+        </Text>
+      </Flex>
+
+      <Tabs.Root defaultValue={editMode ? "overview" : "matches"} mb={8}>
         <Tabs.List>
+          <Tabs.Trigger value="matches">Matches</Tabs.Trigger>
           <Tabs.Trigger value="overview">Overview</Tabs.Trigger>
           <Tabs.Trigger value="profile">Profile</Tabs.Trigger>
-          <Tabs.Trigger value="matches">Matches</Tabs.Trigger>
         </Tabs.List>
+
+        <Tabs.Content value="matches">
+          <MatchesTable matches={matches} playerId={player.id} />
+        </Tabs.Content>
+
         <Tabs.Content value="overview">
-          {/* Overview content */}
           <Flex direction={{ base: "column", md: "row" }} gap={6} mb={6}>
-            {/* Player Image */}
-            <Box>
-              {editMode ? (
-                <Box>
-                  <Text fontWeight="bold" mb={2}>Player Image</Text>
-                  <Box mb={4}>
-                    <ImageUpload 
-                      folder="players" 
-                      currentImage={formData.image}
-                      onImageUploaded={onImageUploadSuccess} 
-                    />
-                  </Box>
-                </Box>
-              ) : (
-                <Box>
-                  {imageSrc ? (
-                    <Image
-                      src={imageSrc}
-                      alt={`${player.name} profile picture`}
-                      boxSize={{ base: "200px", md: "250px" }}
-                      objectFit="cover"
-                      borderRadius="lg"
-                      border="2px solid"
-                      borderColor="gray.200"
-                      shadow="md"
-                    />
-                  ) : (
-                    <Box
-                      boxSize={{ base: "200px", md: "250px" }}
-                      bg="gray.100"
-                      borderRadius="lg"
-                      border="2px solid"
-                      borderColor="gray.200"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                    >
-                      <Text color="gray.500" textAlign="center">
-                        No Image<br />Available
-                      </Text>
-                    </Box>
-                  )}
-                </Box>
-              )}
-            </Box>
+            {editMode ? (
+              <Box>
+                <Text fontWeight="bold" mb={2}>
+                  Player image
+                </Text>
+                <ImageUpload folder="players" currentImage={form.image} onImageUploaded={(key) => update("image", key)} />
+              </Box>
+            ) : imageSrc ? (
+              <Image
+                src={imageSrc}
+                alt={`${name} profile picture`}
+                boxSize={{ base: "200px", md: "250px" }}
+                objectFit="cover"
+                borderRadius="lg"
+                border="2px solid"
+                borderColor="gray.200"
+                shadow="md"
+              />
+            ) : null}
           </Flex>
-          
+
           <Heading as="h2" size="md" mb={3}>
             Personal details
           </Heading>
-          <Grid
-            templateColumns={{ base: "1fr", md: "1fr 1fr" }}
-            gap={4}
-            mb={8}
-            templateRows={{ base: "repeat(9, 1fr)", md: "repeat(5, 1fr)" }}
-          >
-            <GridItem bg="gray.50" p={3} borderRadius="md">
-              <Text fontWeight="bold">Age</Text>
-              {editMode ? (
-                <Input
-                  name="age"
-                  value={formData.age}
-                  onChange={handleInputChange}
-                  size="sm"
-                  bg="white"
-                />
-              ) : (
-                <Text>{player.age}</Text>
-              )}
-            </GridItem>
-            <GridItem bg="gray.50" p={3} borderRadius="md">
-              <Text fontWeight="bold">Country</Text>
-              {editMode ? (
-                <Input
-                  name="country"
-                  value={formData.country}
-                  onChange={handleInputChange}
-                  size="sm"
-                  bg="white"
-                />
-              ) : (
-                <Text>{player.country}</Text>
-              )}
-            </GridItem>
-            <GridItem bg="gray.50" p={3} borderRadius="md">
-              <Text fontWeight="bold">Plays</Text>
-              {editMode ? (
-                <Select.Root
-                  collection={handCollection}
-                  value={[formData.hand]}
-                  onValueChange={(details) => {
-                    setFormData(prev => ({ ...prev, hand: details.value[0] }));
-                  }}
-                  size="sm"
-                >
-                  <Select.Trigger bg="white" />
-                  <Select.Content>
-                    {handCollection.items.map((hand) => (
-                      <Select.Item item={hand} key={hand.value}>
-                        {hand.label}
-                      </Select.Item>
+          {editMode ? (
+            <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} mb={8}>
+              {TEXT_FIELDS.map(({ name: field, label, placeholder }) => (
+                <GridItem key={field}>
+                  <Text fontWeight="bold" mb={1}>
+                    {label}
+                  </Text>
+                  <Input size="sm" value={form[field]} placeholder={placeholder} onChange={(e) => update(field, e.target.value)} />
+                </GridItem>
+              ))}
+              <GridItem>
+                <Text fontWeight="bold" mb={1}>
+                  Plays
+                </Text>
+                <NativeSelect.Root size="sm">
+                  <NativeSelect.Field aria-label="Plays" value={form.hand} onChange={(e) => update("hand", e.currentTarget.value)}>
+                    <option value="">Not entered</option>
+                    {PLAYER_HAND.map((hand) => (
+                      <option key={hand.ID} value={hand.ID}>
+                        {hand.TEXT}
+                      </option>
                     ))}
-                  </Select.Content>
-                </Select.Root>
-              ) : (
-                <Text>{formatHand(player.hand)}</Text>
-              )}
-            </GridItem>
-            <GridItem bg="gray.50" p={3} borderRadius="md">
-              <Text fontWeight="bold">Backhand</Text>
-              {editMode ? (
-                <Select.Root
-                  collection={bhCollection}
-                  value={[formData.backHand]}
-                  onValueChange={(details) => {
-                    setFormData(prev => ({ ...prev, backHand: details.value[0] }));
-                  }}
-                  size="sm"
-                >
-                  <Select.Trigger bg="white" />
-                  <Select.Content>
-                    {bhCollection.items.map((backhand) => (
-                      <Select.Item item={backhand} key={backhand.value}>
-                        {backhand.label}
-                      </Select.Item>
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
+              </GridItem>
+              <GridItem>
+                <Text fontWeight="bold" mb={1}>
+                  Backhand
+                </Text>
+                <NativeSelect.Root size="sm">
+                  <NativeSelect.Field aria-label="Backhand" value={form.backHand} onChange={(e) => update("backHand", e.currentTarget.value)}>
+                    <option value="">Not entered</option>
+                    {PLAYER_BACKHAND.map((backHand) => (
+                      <option key={backHand.ID} value={backHand.ID}>
+                        {backHand.TEXT}
+                      </option>
                     ))}
-                  </Select.Content>
-                </Select.Root>
-              ) : (
-                <Text>{formatBackhand(player.backHand)}</Text>
-              )}
-            </GridItem>
-            <GridItem bg="gray.50" p={3} borderRadius="md">
-              <Text fontWeight="bold">Rank</Text>
-              {editMode ? (
-                <Input
-                  name="rank"
-                  type="number"
-                  value={formData.rank}
-                  onChange={handleInputChange}
-                  size="sm"
-                  bg="white"
-                />
-              ) : (
-                <Text>{player.rank}</Text>
-              )}
-            </GridItem>
-            <GridItem bg="gray.50" p={3} borderRadius="md">
-              <Text fontWeight="bold">Nickname</Text>
-              {editMode ? (
-                <Input
-                  name="nickName"
-                  value={formData.nickName}
-                  onChange={handleInputChange}
-                  size="sm"
-                  bg="white"
-                  placeholder="Enter nickname"
-                />
-              ) : (
-                <Text>{player.nickName || "-"}</Text>
-              )}
-            </GridItem>
-            <GridItem bg="gray.50" p={3} borderRadius="md">
-              <Text fontWeight="bold">Birth Place</Text>
-              {editMode ? (
-                <Input
-                  name="birthPlace"
-                  value={formData.birthPlace}
-                  onChange={handleInputChange}
-                  size="sm"
-                  bg="white"
-                  placeholder="Enter birth place"
-                />
-              ) : (
-                <Text>{player.birthPlace || "-"}</Text>
-              )}
-            </GridItem>
-            <GridItem bg="gray.50" p={3} borderRadius="md">
-              <Text fontWeight="bold">Turned Pro</Text>
-              {editMode ? (
-                <Input
-                  name="turnedPro"
-                  type="number"
-                  value={formData.turnedPro}
-                  onChange={handleInputChange}
-                  size="sm"
-                  bg="white"
-                  placeholder="Year (e.g., 2010)"
-                  min="1900"
-                  max={new Date().getFullYear()}
-                />
-              ) : (
-                <Text>{player.turnedPro || "-"}</Text>
-              )}
-            </GridItem>
-          </Grid>
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
+              </GridItem>
+            </Grid>
+          ) : (
+            <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} mb={8}>
+              <Detail label="Country" value={player.country} />
+              <Detail label="Age" value={player.age} />
+              <Detail label="Plays" value={player.hand ? formatHand(player.hand) : null} />
+              <Detail label="Backhand" value={player.backHand ? formatBackhand(player.backHand) : null} />
+              <Detail label="Nickname" value={player.nickName} />
+              <Detail label="Birth place" value={player.birthPlace} />
+              <Detail label="Turned pro" value={player.turnedPro} />
+            </Grid>
+          )}
         </Tabs.Content>
+
         <Tabs.Content value="profile">
-          <Text fontSize="md" color="gray.500">
-                {editMode ? (
-                  <Textarea
-                    name="profile"
-                    value={formData.profile}
-                    onChange={handleInputChange}
-                    size="sm"
-                    rows={10}
-                    bg="white"
-                  />
-                ) : (
-                  player.profile
-                )}
-              </Text>
-        </Tabs.Content>
-        <Tabs.Content value="matches">
-          {/* Matches content */}
-          <MatchesTable matches={matches} playerMatchId={player.playerMatchId} />
+          {editMode ? (
+            <Textarea rows={10} value={form.profile} onChange={(e) => update("profile", e.target.value)} />
+          ) : (
+            <Text fontSize="md" color="gray.600" whiteSpace="pre-wrap">
+              {player.profile || "No profile has been written for this player yet."}
+            </Text>
+          )}
         </Tabs.Content>
       </Tabs.Root>
     </Box>
   );
-}
- 
+};
+
 export default PlayerProfile;

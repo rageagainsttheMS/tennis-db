@@ -1,28 +1,19 @@
 "use client";
 
-import { Match } from "@/types";
-import { ROUND_TYPES } from "@/types/constants";
-import { getPlayerByMatchId } from "@/lib/actions/player.actions";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Avatar, Badge, Box, Card, Flex, Grid, Heading, Image, Separator, Text } from "@chakra-ui/react";
+import type { MatchWithPlayers, PlayerSummary } from "@/types";
+import { MATCH_STATUS_LABELS, roundLabel } from "@/types/constants";
 import { useImageUpload } from "@/lib/hooks/useImageUpload";
-import { getServeStats } from "@/lib/stats/match-stats";
-import { useState, useEffect } from "react";
-import {
-  Box,
-  Heading,
-  Text,
-  Grid,
-  Flex,
-  Avatar,
-  Card,
-  Separator,
-  Image,
-} from "@chakra-ui/react";
+import { getStatRows } from "@/lib/stats/match-stats";
+import { displayName, formatMatchDate } from "@/lib/utils/utils";
 
 interface MatchDetailsProps {
-  match: Match;
+  match: MatchWithPlayers;
 }
 
-const StatRow = ({ label, winnerValue, loserValue }: { label: string; winnerValue: string | number; loserValue: string | number }) => (
+const StatRow = ({ label, winnerValue, loserValue }: { label: string; winnerValue: string; loserValue: string }) => (
   <Grid templateColumns="1fr 2fr 1fr" gap={4} py={3} alignItems="center">
     <Text textAlign="right" fontWeight="semibold" color="green.600">
       {winnerValue}
@@ -36,200 +27,143 @@ const StatRow = ({ label, winnerValue, loserValue }: { label: string; winnerValu
   </Grid>
 );
 
-const MatchDetails = ({ match }: MatchDetailsProps) => {
+function usePlayerImage(player: PlayerSummary) {
   const { getPresignedUrl } = useImageUpload();
-  const [winnerImage, setWinnerImage] = useState<string | null>(null);
-  const [loserImage, setLoserImage] = useState<string | null>(null);
+  const [src, setSrc] = useState<string | null>(null);
 
-  // Fetch player images
   useEffect(() => {
-    const fetchPlayerImages = async () => {
-      try {
-        // Fetch winner image
-        if (match.winnerId) {
-          const winnerPlayer = await getPlayerByMatchId(match.winnerId);
-          if (winnerPlayer?.image) {
-            const winnerImageUrl = await getPresignedUrl(winnerPlayer.image);
-            setWinnerImage(winnerImageUrl);
-          }
-        }
+    if (!player.image) return;
+    getPresignedUrl(player.image)
+      .then(setSrc)
+      .catch((error) => console.error("Failed to fetch player image:", error));
+  }, [player.image, getPresignedUrl]);
 
-        // Fetch loser image
-        if (match.loserId) {
-          const loserPlayer = await getPlayerByMatchId(match.loserId);
-          if (loserPlayer?.image) {
-            const loserImageUrl = await getPresignedUrl(loserPlayer.image);
-            setLoserImage(loserImageUrl);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch player images:', error);
-      }
-    };
+  return src;
+}
 
-    fetchPlayerImages();
-  }, [match.winnerId, match.loserId, getPresignedUrl]);
+const PlayerHeading = ({
+  player,
+  rank,
+  won,
+}: {
+  player: PlayerSummary;
+  rank: number | null;
+  won: boolean;
+}) => {
+  const image = usePlayerImage(player);
+  const name = displayName(player);
+  const colour = won ? "green" : "red";
 
-  const winnerStats = getServeStats(match, "winner");
-  const loserStats = getServeStats(match, "loser");
+  const avatar = image ? (
+    <Image
+      src={image}
+      alt={`${name} profile picture`}
+      boxSize="80px"
+      borderRadius="full"
+      objectFit="cover"
+      border="3px solid"
+      borderColor={`${colour}.500`}
+    />
+  ) : (
+    <Avatar.Root size="xl" bg={`${colour}.500`}>
+      <Avatar.Fallback>{name.charAt(0)}</Avatar.Fallback>
+    </Avatar.Root>
+  );
+
+  const details = (
+    <Box textAlign={won ? "right" : "left"} mx={4}>
+      <Link href={`/profile/${player.id}`}>
+        <Heading size="lg" color={`${colour}.600`} _hover={{ textDecoration: "underline" }}>
+          {name}
+        </Heading>
+      </Link>
+      {rank !== null && (
+        <Text fontSize="sm" color="gray.500">
+          Rank: {rank}
+        </Text>
+      )}
+    </Box>
+  );
+
+  return (
+    <Flex align="center" justify={won ? "flex-end" : "flex-start"}>
+      {won ? (
+        <>
+          {details}
+          {avatar}
+        </>
+      ) : (
+        <>
+          {avatar}
+          {details}
+        </>
+      )}
+    </Flex>
+  );
+};
+
+const MatchDetails = ({ match }: MatchDetailsProps) => {
+  const stats = getStatRows(match);
+  const statusLabel = MATCH_STATUS_LABELS[match.status];
+  const venue = [match.surface, match.indoor ? "Indoor" : null].filter(Boolean).join(" · ");
 
   return (
     <Box maxW="1000px" mx="auto" mt={10} p={6}>
-      {/* Match Header */}
       <Card.Root mb={6}>
         <Card.Header>
-          <Flex justify="space-between" align="center" mb={4}>
-            <Flex direction="column" justify="space-between">
-              <Text fontWeight="bold" fontSize="lg" mb={1}>
-                {match.tourneyName}
-              </Text>
-              <Text fontSize="sm">
-                {match.surface}
-              </Text>
-            </Flex>
-            <Text fontWeight="bold" fontSize="md" color="gray.700" mb={1}>
-              {ROUND_TYPES.find(round => round.value === match.round)?.label}
-            </Text>
-          </Flex>
-          
-          {/* Players and Score */}
-          <Grid templateColumns="1fr auto 1fr" gap={6} alignItems="center">
-            {/* Winner */}
-            <Flex align="center" justify="flex-end">
-              <Box textAlign="right" mr={4}>
-                <Heading size="lg" color="green.600">{match.winnerName}</Heading>
-                <Text fontSize="sm" color="gray.600">{match.winnerCountry}</Text>
-                {match.winnerRank && (
-                  <Text fontSize="sm" color="gray.500">Rank: {match.winnerRank}</Text>
-                )}
-              </Box>
-              {winnerImage ? (
-                <Image
-                  src={winnerImage}
-                  alt={`${match.winnerName} profile picture`}
-                  boxSize="80px"
-                  borderRadius="full"
-                  objectFit="cover"
-                  border="3px solid"
-                  borderColor="green.500"
-                />
-              ) : (
-                <Avatar.Root 
-                  size="xl" 
-                  bg="green.500"
-                >
-                  <Avatar.Fallback>{match.winnerName.charAt(0)}</Avatar.Fallback>
-                </Avatar.Root>
-              )}
-            </Flex>
-
-            {/* Score */}
-            <Box textAlign="center">
-              <Heading size="2xl" mb={2}>{match.score || "6-4, 6-2"}</Heading>
-              <Text fontSize="sm" color="gray.600">
-                {match.bestOf === 3 ? "Best of 3" : "Best of 5"}
-              </Text>
-              {match.minutes && (
-                <Text fontSize="sm" color="gray.500">
-                  {Math.floor(match.minutes / 60)}h {match.minutes % 60}m
+          <Flex justify="space-between" align="flex-start" mb={4} gap={4}>
+            <Flex direction="column">
+              <Link href={`/tournament/${match.tournament.id}?season=${match.season}`}>
+                <Text fontWeight="bold" fontSize="lg" mb={1} _hover={{ textDecoration: "underline" }}>
+                  {match.tournament.name} {match.season}
                 </Text>
-              )}
-            </Box>
-
-            {/* Loser */}
-            <Flex align="center">
-              {loserImage ? (
-                <Image
-                  src={loserImage}
-                  alt={`${match.loserName} profile picture`}
-                  boxSize="80px"
-                  borderRadius="full"
-                  objectFit="cover"
-                  border="3px solid"
-                  borderColor="red.500"
-                />
-              ) : (
-                <Avatar.Root 
-                  size="xl" 
-                  bg="red.500"
-                >
-                  <Avatar.Fallback>{match.loserName?.charAt(0) || "L"}</Avatar.Fallback>
-                </Avatar.Root>
-              )}
-              <Box textAlign="left" ml={4}>
-                <Heading size="lg" color="red.600">{match.loserName}</Heading>
-                <Text fontSize="sm" color="gray.600">{match.loserCountry}</Text>
-                {match.loserRank && (
-                  <Text fontSize="sm" color="gray.500">Rank: {match.loserRank}</Text>
-                )}
-              </Box>
+              </Link>
+              <Text fontSize="sm" color="gray.600">
+                {[formatMatchDate(match.playedAt), venue, match.tournamentDetail].filter(Boolean).join(" · ")}
+              </Text>
             </Flex>
+            <Flex direction="column" align="flex-end" gap={1}>
+              <Text fontWeight="bold" fontSize="md" color="gray.700">
+                {roundLabel(match.round)}
+              </Text>
+              {statusLabel && <Badge colorPalette="orange">{statusLabel}</Badge>}
+            </Flex>
+          </Flex>
+
+          <Grid templateColumns="1fr auto 1fr" gap={6} alignItems="center">
+            <PlayerHeading player={match.winner} rank={match.winnerRank} won />
+            <Box textAlign="center">
+              <Heading size="2xl" mb={2}>
+                {match.score}
+              </Heading>
+              <Text fontSize="sm" color="gray.600">
+                Best of {match.bestOf}
+              </Text>
+            </Box>
+            <PlayerHeading player={match.loser} rank={match.loserRank} won={false} />
           </Grid>
         </Card.Header>
       </Card.Root>
 
-      {/* Match Statistics */}
       <Card.Root>
         <Card.Header>
-          <Heading size="md" textAlign="center" mb={4}>Match Statistics</Heading>
+          <Heading size="md" textAlign="center" mb={4}>
+            Match Statistics
+          </Heading>
         </Card.Header>
         <Card.Body>
-          <Box>
-            <StatRow 
-              label="Aces" 
-              winnerValue={winnerStats.aces} 
-              loserValue={loserStats.aces} 
-            />
-            <Separator />
-            
-            <StatRow 
-              label="Double faults" 
-              winnerValue={winnerStats.doubleFaults} 
-              loserValue={loserStats.doubleFaults} 
-            />
-            <Separator />
-            
-            <StatRow 
-              label="First serve %" 
-              winnerValue={`${winnerStats.firstServePercentage}%`} 
-              loserValue={`${loserStats.firstServePercentage}%`} 
-            />
-            <Separator />
-            
-            <StatRow 
-              label="Win % on 1st serve" 
-              winnerValue={`${winnerStats.firstServeWinPercentage}%`} 
-              loserValue={`${loserStats.firstServeWinPercentage}%`} 
-            />
-            <Separator />
-            
-            <StatRow 
-              label="Win % on 2nd serve" 
-              winnerValue={`${winnerStats.secondServeWinPercentage}%`} 
-              loserValue={`${loserStats.secondServeWinPercentage}%`} 
-            />
-            <Separator />
-            
-            <StatRow 
-              label="Break points" 
-              winnerValue={winnerStats.breakPoints} 
-              loserValue={loserStats.breakPoints} 
-            />
-            <Separator />
-            
-            <StatRow 
-              label="Service games won" 
-              winnerValue={winnerStats.serviceGames} 
-              loserValue={loserStats.serviceGames} 
-            />
-            <Separator />
-            
-            <StatRow 
-              label="Service points won" 
-              winnerValue={winnerStats.servicePointsWon} 
-              loserValue={loserStats.servicePointsWon} 
-            />
-          </Box>
+          {stats.length === 0 ? (
+            <Text textAlign="center" color="gray.500">
+              No statistics are available for this match.
+            </Text>
+          ) : (
+            stats.map((row, index) => (
+              <Box key={row.label}>
+                {index > 0 && <Separator />}
+                <StatRow label={row.label} winnerValue={row.winner} loserValue={row.loser} />
+              </Box>
+            ))
+          )}
         </Card.Body>
       </Card.Root>
     </Box>
