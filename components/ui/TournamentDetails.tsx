@@ -80,24 +80,56 @@ const TournamentEditor = ({ tournament, onDone }: { tournament: Tournament; onDo
   );
 };
 
-const TournamentOverview = ({ tournament }: { tournament: Tournament }) => {
-  const image = useStoredImage(tournament.image);
+// The image is shown in the hero, so the overview is the description and draw size.
+const TournamentOverview = ({ tournament }: { tournament: Tournament }) => (
+  <Card p={{ base: 5, md: 8 }}>
+    <Text fontSize="lg" lineHeight="1.7" color={tournament.description ? "ink" : "ink.muted"} whiteSpace="pre-wrap" maxW="760px">
+      {tournament.description || "No description has been written for this tournament yet."}
+    </Text>
+    {tournament.drawSize && (
+      <Text mt={6} color="ink.muted">
+        Draw of {tournament.drawSize}
+      </Text>
+    )}
+  </Card>
+);
+
+/**
+ * The tournament's photo behind the hero: the right-hand panel on wide screens, fading into
+ * the green so the title stays readable, and a dimmed full-width backdrop on phones.
+ */
+const HeroImage = ({ src }: { src: string }) => {
+  const [loaded, setLoaded] = useState(false);
   return (
-    <Card p={{ base: 5, md: 8 }}>
-      <Flex direction={{ base: "column", md: "row" }} gap={8}>
-        {image && <Image src={image} alt={tournament.name} w={{ base: "100%", md: "360px" }} objectFit="cover" borderRadius="xl" flexShrink={0} />}
-        <Box>
-          <Text fontSize="lg" lineHeight="1.7" color={tournament.description ? "ink" : "ink.muted"} whiteSpace="pre-wrap">
-            {tournament.description || "No description has been written for this tournament yet."}
-          </Text>
-          {tournament.drawSize && (
-            <Text mt={6} color="ink.muted">
-              Draw of {tournament.drawSize}
-            </Text>
-          )}
-        </Box>
-      </Flex>
-    </Card>
+    <Box
+      position="absolute"
+      top={0}
+      bottom={0}
+      right={0}
+      w={{ base: "100%", lg: "48%" }}
+      opacity={loaded ? 1 : 0}
+      transition="opacity 0.4s ease"
+      aria-hidden="true"
+    >
+      <Image
+        src={src}
+        alt=""
+        w="100%"
+        h="100%"
+        objectFit="cover"
+        opacity={{ base: 0.3, lg: 0.85 }}
+        onLoad={() => setLoaded(true)}
+      />
+      <Box
+        position="absolute"
+        inset={0}
+        bgImage={{
+          base: "linear-gradient(to bottom, rgba(15,46,34,0.55), rgba(15,46,34,0.95))",
+          lg: "linear-gradient(to right, #0F2E22 0%, rgba(15,46,34,0.6) 35%, rgba(15,46,34,0.1) 70%, rgba(15,46,34,0.35) 100%)",
+        }}
+      />
+      <Box position="absolute" left={0} right={0} bottom={0} h="35%" bgImage="linear-gradient(to top, #0F2E22, rgba(15,46,34,0))" />
+    </Box>
   );
 };
 
@@ -118,11 +150,16 @@ const TournamentDetails = ({
   const [tab, setTab] = useState<Tab>("matches");
   const [editing, setEditing] = useState(false);
   const final = findFinal(matches);
+  const heroImage = useStoredImage(tournament.image);
 
   return (
     <Tabs.Root value={tab} onValueChange={(details) => setTab(details.value as Tab)} variant="plain" lazyMount>
       <Hero>
-        <CourtLines display={{ base: "none", lg: "block" }} top="20px" right="-120px" w="520px" h="440px" />
+        {heroImage ? (
+          <HeroImage key={heroImage} src={heroImage} />
+        ) : (
+          <CourtLines display={{ base: "none", lg: "block" }} top="20px" right="-120px" w="520px" h="440px" />
+        )}
         <Container pt={{ base: 8, md: 12 }} position="relative">
           <Flex justify="space-between" align={{ base: "flex-start", lg: "center" }} gap={6} direction={{ base: "column", lg: "row" }} mb={{ base: 6, md: 8 }}>
             <Box flex="1" minW={0} maxW="760px" w="100%">
@@ -174,7 +211,9 @@ const TournamentDetails = ({
             <Flex align="center" gap={3}>
               {seasons.length > 0 && season !== null && (
                 <>
-                  <Text color="hero.muted">Year</Text>
+                  <Text color="hero.text" textShadow="0 1px 3px rgba(0,0,0,0.6)">
+                    Year
+                  </Text>
                   <NativeSelect.Root size="lg" width="130px">
                     <NativeSelect.Field
                       aria-label="Year"
@@ -203,6 +242,7 @@ const TournamentDetails = ({
                   }}
                   variant="outline"
                   color="hero.text"
+                  bg="rgba(15,46,34,0.7)"
                   borderColor="whiteAlpha.400"
                   borderRadius="xl"
                   size="lg"
