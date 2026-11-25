@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Button, Flex, Input, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Input, Text, useBreakpointValue } from "@chakra-ui/react";
 import { LuSearch } from "react-icons/lu";
 import { getPlayers } from "@/lib/actions/player.actions";
 import { getTournaments } from "@/lib/actions/tournament.actions";
@@ -13,15 +13,16 @@ import { Segmented } from "../shared/Segmented";
 type Mode = "players" | "tournaments";
 type Suggestion = { id: string; label: string; href: string };
 
-const PLACEHOLDER: Record<Mode, string> = {
-  players: "Search players, e.g. Sinner",
-  tournaments: "Search tournaments, e.g. Madrid",
+const PLACEHOLDER: Record<Mode, { short: string; long: string }> = {
+  players: { short: "Search players", long: "Search players, e.g. Jannik Sinner" },
+  tournaments: { short: "Search tournaments", long: "Search tournaments, e.g. Wimbledon" },
 };
 
 /** The home page search: players or tournaments, with suggestions as you type. */
 const HomeSearch = () => {
   const router = useRouter();
   const listId = useId();
+  const wide = useBreakpointValue({ base: false, md: true });
   const [mode, setMode] = useState<Mode>("players");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ key: string; items: Suggestion[] }>({ key: "", items: [] });
@@ -92,7 +93,7 @@ const HomeSearch = () => {
             aria-label={mode === "players" ? "Search players" : "Search tournaments"}
             aria-controls={listId}
             aria-autocomplete="list"
-            placeholder={PLACEHOLDER[mode]}
+            placeholder={wide ? PLACEHOLDER[mode].long : PLACEHOLDER[mode].short}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);

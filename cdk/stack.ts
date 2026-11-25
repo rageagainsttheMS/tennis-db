@@ -14,8 +14,13 @@ class NextjsStack extends Stack {
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
+    // Origins allowed to upload images from the browser, set in cdk.json ("imageUploadOrigins").
+    // The CloudFront URL can't be read from `nextjs.url` here: the bucket would then depend on
+    // the distribution, which depends on the function, which depends on the bucket.
+    const uploadOrigins = this.node.tryGetContext("imageUploadOrigins") as string[] | undefined;
+
     // Keep the "NextjsS3Bucket" ID: changing it would replace the deployed bucket.
-    const s3Bucket = createImagesBucket(this, "NextjsS3Bucket");
+    const s3Bucket = createImagesBucket(this, "NextjsS3Bucket", uploadOrigins);
 
     //const hostedZone = this.#getHostedZone();
     //const certificate = this.#getCertificate(hostedZone);

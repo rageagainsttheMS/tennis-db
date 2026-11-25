@@ -159,6 +159,9 @@ const TournamentsDirectory = ({
                             {tournament.name}
                           </Text>
                         </Link>
+                        <Box display={{ base: "block", md: "none" }} mt={1} fontSize="sm" color="ink.muted">
+                          <SurfaceDot surface={tournament.surface} indoor={tournament.indoor} />
+                        </Box>
                       </Table.Cell>
                       <Table.Cell>
                         <LevelBadge level={tournament.tournamentType} />

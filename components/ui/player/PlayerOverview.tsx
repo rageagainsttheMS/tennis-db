@@ -100,7 +100,10 @@ const PlayerOverview = ({ player, matches, onSeeMatches }: { player: Player; mat
                       {final.tournament.name}
                     </Text>
                     <Text color="ink.muted" fontSize="sm">
-                      {formatMatchDate(final.playedAt)} · d. {displayName(final.loser)}
+                      {formatMatchDate(final.playedAt)} ·{" "}
+                      <Text as="span" whiteSpace="nowrap">
+                        d. {displayName(final.loser)}
+                      </Text>
                     </Text>
                   </Box>
                   <Text className="tabular" color="ink" whiteSpace="nowrap" letterSpacing="0.04em">

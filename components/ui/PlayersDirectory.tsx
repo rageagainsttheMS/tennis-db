@@ -104,7 +104,20 @@ const PlayersDirectory = ({ players, initialQuery = "" }: { players: DirectoryPl
           )}
         </Flex>
 
-        <Flex gap={1.5} wrap="wrap" mt={5} mb={5} aria-label="Jump to letter" role="group" opacity={search ? 0.45 : 1}>
+        <Flex
+          gap={1.5}
+          wrap={{ base: "nowrap", md: "wrap" }}
+          overflowX={{ base: "auto", md: "visible" }}
+          mx={{ base: -4, md: 0 }}
+          px={{ base: 4, md: 0 }}
+          mt={5}
+          mb={5}
+          pb={{ base: 1, md: 0 }}
+          css={{ scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" } }}
+          aria-label="Jump to letter"
+          role="group"
+          opacity={search ? 0.45 : 1}
+        >
           {LETTERS.map((value) => {
             const selected = !search && value === letter;
             const enabled = lettersInUse.has(value);
@@ -118,9 +131,9 @@ const PlayersDirectory = ({ players, initialQuery = "" }: { players: DirectoryPl
                   setQuery("");
                   setLetter(value);
                 }}
-                w={{ base: "36px", lg: "auto" }}
-                flex={{ lg: "1" }}
-                h={{ base: "36px", md: "48px" }}
+                w={{ base: "40px", lg: "auto" }}
+                flex={{ base: "0 0 auto", lg: "1" }}
+                h={{ base: "40px", md: "48px" }}
                 borderRadius="lg"
                 borderWidth="1px"
                 borderColor={selected ? "court.900" : "line"}

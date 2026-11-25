@@ -114,13 +114,55 @@ const PlayerMatches = ({ matches, playerId }: { matches: MatchWithPlayers[]; pla
               </Box>
             )}
           </Flex>
-          <Table.Root size="md" interactive>
+          {/* Phones: one stacked row per match instead of a five-column table. */}
+          <Box display={{ base: "block", md: "none" }}>
+            {event.matches.map((match) => {
+              const won = match.winnerId === playerId;
+              const opponent = won ? match.loser : match.winner;
+              return (
+                <Flex
+                  key={match.id}
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`${won ? "Win" : "Loss"} against ${displayName(opponent)}, ${roundLabel(match.round)}`}
+                  onClick={() => router.push(`${ROUTES.MATCH}/${match.id}`)}
+                  onKeyDown={(key) => key.key === "Enter" && router.push(`${ROUTES.MATCH}/${match.id}`)}
+                  align="center"
+                  gap={3}
+                  px={4}
+                  py={3.5}
+                  borderTopWidth="1px"
+                  borderColor="line"
+                  cursor="pointer"
+                  _first={{ borderTopWidth: 0 }}
+                  _hover={{ bg: "page" }}
+                >
+                  <ResultChip won={won} />
+                  <Box flex="1" minW={0}>
+                    <Link href={`${ROUTES.PLAYERPROFILE}/${opponent.id}`} onClick={(click) => click.stopPropagation()}>
+                      <Text as="span" fontWeight="semibold" textDecoration="underline" color="ink">
+                        {displayName(opponent)}
+                      </Text>
+                    </Link>
+                    <Text color="ink.muted" fontSize="sm" mt={0.5}>
+                      {roundLabel(match.round)} · {formatMatchDate(match.playedAt)}
+                    </Text>
+                  </Box>
+                  <Text className="tabular" whiteSpace="nowrap" letterSpacing="0.04em" fontSize="sm" textAlign="right">
+                    {match.score}
+                  </Text>
+                </Flex>
+              );
+            })}
+          </Box>
+
+          <Table.Root size="md" interactive display={{ base: "none", md: "table" }}>
             <Table.Header>
               <Table.Row bg="transparent">
-                <Table.ColumnHeader color="ink.muted" fontWeight="medium" pl={{ base: 4, md: 7 }} display={{ base: "none", md: "table-cell" }}>
+                <Table.ColumnHeader color="ink.muted" fontWeight="medium" pl={7}>
                   Date
                 </Table.ColumnHeader>
-                <Table.ColumnHeader color="ink.muted" fontWeight="medium" pl={{ base: 4, md: 3 }}>
+                <Table.ColumnHeader color="ink.muted" fontWeight="medium" pl={3}>
                   Round
                 </Table.ColumnHeader>
                 <Table.ColumnHeader color="ink.muted" fontWeight="medium">
@@ -129,7 +171,7 @@ const PlayerMatches = ({ matches, playerId }: { matches: MatchWithPlayers[]; pla
                 <Table.ColumnHeader color="ink.muted" fontWeight="medium">
                   Result
                 </Table.ColumnHeader>
-                <Table.ColumnHeader color="ink.muted" fontWeight="medium" pr={{ base: 4, md: 7 }}>
+                <Table.ColumnHeader color="ink.muted" fontWeight="medium" pr={7}>
                   Score
                 </Table.ColumnHeader>
               </Table.Row>
@@ -140,10 +182,10 @@ const PlayerMatches = ({ matches, playerId }: { matches: MatchWithPlayers[]; pla
                 const opponent = won ? match.loser : match.winner;
                 return (
                   <Table.Row key={match.id} onClick={() => router.push(`${ROUTES.MATCH}/${match.id}`)} cursor="pointer" bg="transparent">
-                    <Table.Cell pl={{ base: 4, md: 7 }} whiteSpace="nowrap" color="ink.muted" display={{ base: "none", md: "table-cell" }}>
+                    <Table.Cell pl={7} whiteSpace="nowrap" color="ink.muted">
                       {formatMatchDate(match.playedAt)}
                     </Table.Cell>
-                    <Table.Cell pl={{ base: 4, md: 3 }}>{roundLabel(match.round)}</Table.Cell>
+                    <Table.Cell pl={3}>{roundLabel(match.round)}</Table.Cell>
                     <Table.Cell>
                       <Link href={`${ROUTES.PLAYERPROFILE}/${opponent.id}`} onClick={(click) => click.stopPropagation()}>
                         <Text as="span" fontWeight="semibold" textDecoration="underline" color="ink">
@@ -154,7 +196,7 @@ const PlayerMatches = ({ matches, playerId }: { matches: MatchWithPlayers[]; pla
                     <Table.Cell>
                       <ResultChip won={won} />
                     </Table.Cell>
-                    <Table.Cell pr={{ base: 4, md: 7 }} className="tabular" whiteSpace="nowrap" letterSpacing="0.04em">
+                    <Table.Cell pr={7} className="tabular" whiteSpace="nowrap" letterSpacing="0.04em">
                       {match.score}
                     </Table.Cell>
                   </Table.Row>

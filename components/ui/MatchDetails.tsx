@@ -99,15 +99,27 @@ const MatchDetails = ({ match }: { match: MatchWithPlayers }) => {
             </Text>
           ) : (
             <>
-              <Grid templateColumns="1fr 2fr 1fr" gap={4} py={4} borderBottomWidth="1px" borderColor="line" fontSize="sm" color="ink.muted" fontWeight="semibold">
+              <Grid templateColumns={{ base: "1fr 1.2fr 1fr", md: "1fr 2fr 1fr" }} gap={4} py={4} borderBottomWidth="1px" borderColor="line" fontSize="sm" color="ink.muted" fontWeight="semibold">
                 <Text textAlign="right" truncate>
-                  {displayName(match.winner)}
+                  <Box as="span" display={{ base: "inline", md: "none" }}>
+                    {match.winner.name}
+                  </Box>
+                  <Box as="span" display={{ base: "none", md: "inline" }}>
+                    {displayName(match.winner)}
+                  </Box>
                 </Text>
                 <Box />
-                <Text truncate>{displayName(match.loser)}</Text>
+                <Text truncate>
+                  <Box as="span" display={{ base: "inline", md: "none" }}>
+                    {match.loser.name}
+                  </Box>
+                  <Box as="span" display={{ base: "none", md: "inline" }}>
+                    {displayName(match.loser)}
+                  </Box>
+                </Text>
               </Grid>
               {stats.map((row, index) => (
-                <Grid key={row.label} templateColumns="1fr 2fr 1fr" gap={4} py={4} alignItems="center" borderTopWidth={index ? "1px" : 0} borderColor="line">
+                <Grid key={row.label} templateColumns={{ base: "1fr 1.2fr 1fr", md: "1fr 2fr 1fr" }} gap={4} py={4} alignItems="center" borderTopWidth={index ? "1px" : 0} borderColor="line">
                   <Text textAlign="right" fontWeight="bold" fontSize="lg" className="tabular">
                     {row.winner}
                   </Text>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Box, Flex, Text } from "@chakra-ui/react";
+import { LuLogIn } from "react-icons/lu";
 import { ROUTES } from "@/types/constants";
 import { BallIcon } from "./BallIcon";
 import MenuButton from "./Menu";
@@ -18,7 +19,7 @@ const NavLink = ({ href, label, active }: { href: string; label: string; active:
       as="span"
       display="block"
       whiteSpace="nowrap"
-      px={{ base: 2, md: 3 }}
+      px={{ base: 1.5, sm: 2, md: 3 }}
       py={2}
       fontWeight={active ? "semibold" : "medium"}
       fontSize={{ base: "sm", md: "md" }}
@@ -40,9 +41,9 @@ function Header() {
     <Box as="header" bg="court.900" color="hero.text">
       <Flex maxW="1200px" mx="auto" px={{ base: 4, md: 6 }} py={4} align="center" justify="space-between" gap={{ base: 2, md: 4 }}>
         <Link href="/" aria-label="Tennis DB home">
-          <Flex align="center" gap={2.5}>
-            <BallIcon size={26} />
-            <Text fontFamily="heading" fontWeight="bold" fontSize={{ base: "lg", md: "xl" }} whiteSpace="nowrap" display={{ base: "none", sm: "block" }}>
+          <Flex align="center" gap={{ base: 2, md: 2.5 }}>
+            <BallIcon size={24} />
+            <Text fontFamily="heading" fontWeight="bold" fontSize={{ base: "md", sm: "lg", md: "xl" }} whiteSpace="nowrap">
               Tennis DB
             </Text>
           </Flex>
@@ -63,12 +64,14 @@ function Header() {
           ) : (
             status === "unauthenticated" &&
             pathname !== ROUTES.SIGNIN && (
-              <Link href={ROUTES.SIGNIN}>
-                <Box
+              <Link href={ROUTES.SIGNIN} aria-label="Sign in">
+                <Flex
                   as="span"
-                  display="block"
-                  px={4}
-                  py={2}
+                  align="center"
+                  justify="center"
+                  boxSize={{ base: "36px", sm: "auto" }}
+                  px={{ base: 0, sm: 4 }}
+                  py={{ base: 0, sm: 2 }}
                   whiteSpace="nowrap"
                   borderRadius="full"
                   borderWidth="1px"
@@ -77,8 +80,13 @@ function Header() {
                   fontWeight="medium"
                   _hover={{ bg: "court.800" }}
                 >
-                  Sign in
-                </Box>
+                  <Box display={{ base: "block", sm: "none" }}>
+                    <LuLogIn size={18} />
+                  </Box>
+                  <Box as="span" display={{ base: "none", sm: "inline" }}>
+                    Sign in
+                  </Box>
+                </Flex>
               </Link>
             )
           )}
