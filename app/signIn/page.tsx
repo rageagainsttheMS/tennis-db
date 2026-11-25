@@ -5,8 +5,8 @@ import { signIn } from "next-auth/react";
 export default function SignIn() {
   return (
     <Box
-      minH="100vh"
-      bgGradient="linear(to-br, gray.900, gray.800, indigo.950)"
+      minH="75vh"
+      bg="court.900"
       display="flex"
       alignItems="center"
       justifyContent="center"
@@ -26,12 +26,14 @@ export default function SignIn() {
           <Flex direction="column" gap={2}>
             <Heading
               fontSize="3xl"
+              fontFamily="heading"
               fontWeight="bold"
+              color="ink"
               textAlign={"center"}
             >
               Welcome to Tennis DB!
             </Heading>
-            <Text textAlign="center">
+            <Text textAlign="center" color="ink.muted">
               Browsing is open to everyone. Sign in to manage players and tournaments.
             </Text>
           </Flex>
@@ -50,11 +52,13 @@ export default function SignIn() {
             px={4}
             py={2}
             borderWidth={1}
-            rounded="md"
-            bg="black"
+            rounded="xl"
+            bg="court.900"
+            color="white"
+            h="48px"
             fontWeight="medium"
             shadow="sm"
-            _hover={{ bg: "gray.50" }}
+            _hover={{ bg: "court.800" }}
             _focus={{
               outline: "none",
               ring: 2,

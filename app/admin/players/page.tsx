@@ -1,10 +1,7 @@
-import { getPlayers } from "@/lib/actions/player.actions";
-import PlayersTable from "@/components/ui/PlayersTable";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/types/constants";
 
-const AdminPlayersPage = async () => {
-  const players = await getPlayers();
-
-  return <PlayersTable players={players} />;
-};
-
-export default AdminPlayersPage;
+// The player list is public now; admins see the bio columns there.
+export default function AdminPlayersPage() {
+  redirect(ROUTES.PLAYERS);
+}

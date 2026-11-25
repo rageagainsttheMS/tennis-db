@@ -1,23 +1,36 @@
 export const ROUTES = {
+    PLAYERS: "/players",
+    TOURNAMENTS: "/tournaments",
+    /** Old admin list URLs. They redirect to the public lists, which show admins the bio columns. */
     PLAYERADMIN : "/admin/players",
-    SIGNIN : "/signIn",
     TOURNADMIN : "/admin/tournaments",
+    SIGNIN : "/signIn",
     PLAYERPROFILE: "/profile",
+    TOURNAMENT: "/tournament",
+    MATCH: "/match",
 }
 
-export const HIGHLIGHT_BORDER = 'blackAlpha.500';
-export const HIGHLIGHT_BORDER_WIDTH = '2px';
+/** Current players offered as search suggestions on the home page. */
+export const SUGGESTED_PLAYERS = ["Jannik Sinner", "Carlos Alcaraz", "Novak Djokovic", "Alexander Zverev"] as const;
+
+/** The four majors, by their tournament slug, in calendar order. */
+export const GRAND_SLAMS = [
+    { id: "australian-open", name: "Australian Open", surface: "Hard" },
+    { id: "roland-garros", name: "Roland Garros", surface: "Clay" },
+    { id: "wimbledon", name: "Wimbledon", surface: "Grass" },
+    { id: "us-open", name: "US Open", surface: "Hard" },
+] as const;
 
 export const ADMINROLE = 'admin';
 
 export const PLAYER_HAND = [
-    {ID : "LEFT", TEXT : "Left Handed"},
-    {ID : "RIGHT", TEXT : "Right Handed"},
+    {ID : "LEFT", TEXT : "Left-handed"},
+    {ID : "RIGHT", TEXT : "Right-handed"},
 ]
 
 export const PLAYER_BACKHAND = [
-    {ID : "ONEHANDED", TEXT : "One Handed"},
-    {ID : "TWOHANDED", TEXT : "Two Handed"},
+    {ID : "ONEHANDED", TEXT : "One-handed"},
+    {ID : "TWOHANDED", TEXT : "Two-handed"},
 ]
 
 /** Every round, in the order a tournament page lists them (final first). */

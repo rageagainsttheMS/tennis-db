@@ -1,9 +1,12 @@
-import { Center, Spinner } from "@chakra-ui/react";
+import { Box, Center, Spinner } from "@chakra-ui/react";
 
 export default function Loading() {
   return (
-    <Center minH="60vh">
-      <Spinner size="xl" />
-    </Center>
+    <>
+      <Box bg="court.900" h={{ base: "160px", md: "240px" }} />
+      <Center minH="40vh">
+        <Spinner size="xl" color="court.900" />
+      </Center>
+    </>
   );
 }

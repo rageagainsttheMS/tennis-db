@@ -1,6 +1,6 @@
 "use server";
 import { prisma } from "@/db/prisma";
-import { ActionResult, MATCH_INCLUDE } from "@/types";
+import { ActionResult, MATCH_INCLUDE, PLAYER_DIRECTORY_SELECT } from "@/types";
 import { parseInput } from "@/lib/validation";
 import { playerBioSchema, type PlayerBioInput } from "@/lib/validation/player.schema";
 import { requireAdmin } from "@/lib/utils/auth-guards";
@@ -22,6 +22,14 @@ export async function getPlayers(searchQuery?: string) {
       : undefined,
     orderBy: { name: "asc" },
     take: query ? SEARCH_LIMIT : undefined,
+  });
+}
+
+/** Every player with the fields the directory shows, sorted by the source name. */
+export async function getPlayerDirectory() {
+  return prisma.player.findMany({
+    select: PLAYER_DIRECTORY_SELECT,
+    orderBy: { name: "asc" },
   });
 }
 

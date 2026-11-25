@@ -65,7 +65,7 @@ export function makeMatchWithPlayers(overrides: Partial<Match> = {}): MatchWithP
   const match = makeMatch(overrides);
   return {
     ...match,
-    tournament: { id: match.tournamentId, name: "Brisbane", tournamentType: "ATP250" },
+    tournament: { id: match.tournamentId, name: "Brisbane", tournamentType: "ATP250", surface: "Hard", indoor: false },
     winner: { id: match.winnerId, name: "Dimitrov G.", fullName: "Grigor Dimitrov", image: null },
     loser: { id: match.loserId, name: "Rune H.", fullName: null, image: null },
   };

@@ -1,10 +1,7 @@
-import { getTournaments } from "@/lib/actions/tournament.actions";
-import TournamentsTable from "@/components/ui/TournamentsTable";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/types/constants";
 
-const AdminTournamentsPage = async () => {
-  const tournaments = await getTournaments();
-
-  return <TournamentsTable tournaments={tournaments} />;
-};
-
-export default AdminTournamentsPage;
+// The tournament list is public now; admins see the details column there.
+export default function AdminTournamentsPage() {
+  redirect(ROUTES.TOURNAMENTS);
+}

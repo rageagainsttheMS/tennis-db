@@ -1,13 +1,15 @@
 import type { Player } from "@/types";
 
-export function formatHand(hand: string | null | undefined): string {
-  if (!hand) return "-";
-  return hand === "LEFT" ? "Left Handed" : "Right Handed";
+/** "Right-handed", "Left-handed", or null when not entered. */
+export function formatHand(hand: string | null | undefined): string | null {
+  if (!hand) return null;
+  return hand === "LEFT" ? "Left-handed" : "Right-handed";
 }
 
-export function formatBackhand(backhand: string | null | undefined): string {
-  if (!backhand) return "-";
-  return backhand === "ONEHANDED" ? "One Handed Backhand" : "Two Handed Backhand";
+/** "One-handed", "Two-handed", or null when not entered. */
+export function formatBackhand(backhand: string | null | undefined): string | null {
+  if (!backhand) return null;
+  return backhand === "ONEHANDED" ? "One-handed" : "Two-handed";
 }
 
 /** The admin-entered full name if there is one, otherwise the source's abbreviated name. */

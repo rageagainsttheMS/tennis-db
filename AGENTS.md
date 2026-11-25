@@ -51,9 +51,10 @@ npx cdk synth               # validate infra without deploying (runs next build 
 
 | Path | Contents |
 | --- | --- |
-| `app/` | App Router pages. `admin/` holds the player and tournament lists (role-checked in `admin/layout.tsx`); bios are edited on the profile and tournament pages. `api/` holds the auth, upload, image-URL and health routes |
+| `app/` | App Router pages. `players/` and `tournaments/` are the public lists; admins also see the bio/details columns there. `admin/*` only redirects to them (role-checked in `admin/layout.tsx`). Bios are edited on the profile and tournament pages. `api/` holds the auth, upload, image-URL and health routes |
 | `proxy.ts` | Next 16 middleware. Redirects non-admins away from `/admin/:path*` |
-| `components/ui/` | Feature components. `provider.tsx`, `color-mode.tsx`, `toaster.tsx` and `tooltip.tsx` are Chakra CLI snippets |
+| `components/ui/` | Feature components. `shared/` holds the layout pieces (header, hero, cards, badges). `provider.tsx`, `color-mode.tsx`, `toaster.tsx` and `tooltip.tsx` are Chakra CLI snippets |
+| `theme.ts` | Chakra design tokens: the court green, the ball yellow and the surface colours. Use these tokens, not raw hex values |
 | `lib/actions/` | Server Actions (`"use server"`). All DB reads and writes go through these |
 | `lib/utils/auth-guards.ts` | `requireAdmin()` and `getAdminSession()` for server code |
 | `lib/validation/` | Zod schemas and `parseInput()` for action inputs |

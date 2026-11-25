@@ -1,204 +1,115 @@
-"use client";
+import Link from "next/link";
+import { Box, Flex, Grid, Heading, Text } from "@chakra-ui/react";
+import HomeSearch from "@/components/ui/home/HomeSearch";
+import { SurfaceBadge } from "@/components/ui/shared/Badges";
+import { Container, CourtLines, Eyebrow, Hero, SectionHeading } from "@/components/ui/shared/Layout";
+import { GRAND_SLAMS, ROUTES } from "@/types/constants";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Box, Center, Heading, Input, Flex } from "@chakra-ui/react";
-import { Tabs } from "@chakra-ui/react";
-import { getPlayers } from "@/lib/actions/player.actions";
-import { getTournaments } from "@/lib/actions/tournament.actions";
-import type { Player, Tournament } from "@/types";
-import { displayName } from "@/lib/utils/utils";
+const SURFACES = [
+  { key: "hard", label: "Hard", bg: "surface.hard" },
+  { key: "clay", label: "Clay", bg: "surface.clay" },
+  { key: "grass", label: "Grass", bg: "surface.grass" },
+] as const;
 
 export default function Home() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Player[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [tournamentSearchQuery, setTournamentSearchQuery] = useState("");
-  const [tournamentSearchResults, setTournamentSearchResults] = useState<Tournament[]>([]);
-  const [showTournamentSuggestions, setShowTournamentSuggestions] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    const debounceTimeout = setTimeout(() => {
-      if (searchQuery.trim().length === 0) {
-        setSearchResults([]);
-        setShowSuggestions(false);
-        return;
-      }
-
-      const search = async () => {
-        try {
-          const results = await getPlayers(searchQuery);
-          setSearchResults(results.slice(0, 8));
-          setShowSuggestions(true);
-        } catch (error) {
-          console.error("Search error:", error);
-          setSearchResults([]);
-        }
-      };
-      search();
-    }, 300);
-    return () => clearTimeout(debounceTimeout);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    const debounceTimeout = setTimeout(() => {
-      if (tournamentSearchQuery.trim().length === 0) {
-        setTournamentSearchResults([]);
-        setShowTournamentSuggestions(false);
-        return;
-      }
-
-      const search = async () => {
-        try {
-          const results = await getTournaments(tournamentSearchQuery);
-          setTournamentSearchResults(results.slice(0, 8));
-          setShowTournamentSuggestions(true);
-        } catch (error) {
-          console.error("Tournament search error:", error);
-          setTournamentSearchResults([]);
-        }
-      };
-      search();
-    }, 300);
-    return () => clearTimeout(debounceTimeout);
-  }, [tournamentSearchQuery]);
-
-  const handlePlayerSelect = (playerId: string) => {
-    setShowSuggestions(false);
-    setSearchQuery("");
-    router.push(`/profile/${playerId}`);
-  };
-
-  const handleTournamentSelect = (tournamentId: string) => {
-    setShowTournamentSuggestions(false);
-    setTournamentSearchQuery("");
-    router.push(`/tournament/${tournamentId}`);
-  };
-
   return (
-    <Center minH="80vh" flexDirection="column">
-      <Heading mb={8} fontSize={{ base: "2xl", md: "3xl" }} textAlign="center">
-        Search the ultimate tennis database
-      </Heading>
-      <Box w={{ base: "100%", sm: "480px" }}>
-        <Tabs.Root defaultValue="players">
-          <Tabs.List mb={4}>
-            <Tabs.Trigger value="players">Players</Tabs.Trigger>
-            <Tabs.Trigger value="tournaments">Tournaments</Tabs.Trigger>
-          </Tabs.List>
-          <Tabs.Content value="players">
-            <Box position="relative">
+    <>
+      <Hero pb={{ base: 16, md: 24 }}>
+        <Container position="relative">
+          <CourtLines display={{ base: "none", md: "block" }} top={4} bottom="22%" left="6%" right="6%" />
+          <Box position="relative" textAlign="center" pt={{ base: 10, md: 20 }}>
+            <Eyebrow>The tennis database</Eyebrow>
+            <Heading
+              as="h1"
+              fontFamily="heading"
+              fontWeight="bold"
+              fontSize={{ base: "4xl", sm: "5xl", md: "7xl" }}
+              lineHeight="1.02"
+              letterSpacing="-0.02em"
+              mt={5}
+              mb={6}
+            >
+              Every player.
+              <br />
+              Every tournament.
+              <br />
+              One search.
+            </Heading>
+            <Text color="hero.muted" fontSize={{ base: "md", md: "lg" }} maxW="560px" mx="auto" mb={{ base: 8, md: 12 }}>
+              Look up careers, results and draws from across the ATP tour, in seconds.
+            </Text>
+            <HomeSearch />
+          </Box>
+        </Container>
+      </Hero>
+
+      <Container pt={{ base: 12, md: 16 }}>
+        <SectionHeading
+          aside={
+            <Link href={ROUTES.TOURNAMENTS}>
+              <Text fontWeight="semibold" textDecoration="underline" color="ink">
+                All tournaments →
+              </Text>
+            </Link>
+          }
+        >
+          Browse by surface
+        </SectionHeading>
+        <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={5} mb={{ base: 12, md: 16 }}>
+          {SURFACES.map((surface) => (
+            <Link key={surface.key} href={`${ROUTES.TOURNAMENTS}?surface=${surface.key}`}>
               <Flex
-                as="form"
-                boxShadow="lg"
-                borderRadius="full"
-                bg="white"
-                px={4}
-                py={2}
-                align="center"
+                direction="column"
+                justify="space-between"
+                bg={surface.bg}
+                color="white"
+                borderRadius="2xl"
+                p={{ base: 6, md: 8 }}
+                h={{ base: "150px", md: "200px" }}
+                transition="transform 0.15s"
+                _hover={{ transform: "translateY(-3px)" }}
               >
-                <Input
-                  placeholder="Search players..."
-                  variant="subtle"
-                  fontSize="lg"
-                  _placeholder={{ color: "gray.400" }}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => searchQuery && setShowSuggestions(true)}
-                  onBlur={() =>
-                    setTimeout(() => setShowSuggestions(false), 200)
-                  }
-                />
+                <Text fontSize="sm" fontWeight="semibold" letterSpacing="0.14em" opacity={0.85}>
+                  SURFACE
+                </Text>
+                <Flex justify="space-between" align="flex-end">
+                  <Text fontFamily="heading" fontWeight="bold" fontSize={{ base: "4xl", md: "5xl" }} lineHeight="1">
+                    {surface.label}
+                  </Text>
+                  <Text fontWeight="medium">Explore →</Text>
+                </Flex>
               </Flex>
-              {showSuggestions && searchResults.length > 0 && (
-                <Box
-                  position="absolute"
-                  top="100%"
-                  left={4}
-                  right={4}
-                  bg="white"
-                  boxShadow="lg"
-                  borderRadius="md"
-                  zIndex={10}
-                  maxH="300px"
-                  overflowY="auto"
-                >
-                  {searchResults.map((player) => (
-                    <Box
-                      key={player.id}
-                      px={4}
-                      py={3}
-                      cursor="pointer"
-                      _hover={{ bg: "gray.100" }}
-                      borderBottom="1px solid"
-                      borderColor="gray.200"
-                      onClick={() => handlePlayerSelect(player.id)}
-                    >
-                      <Box fontWeight="medium">{displayName(player)}</Box>
-                    </Box>
-                  ))}
-                </Box>
-              )}
-            </Box>
-          </Tabs.Content>
-          <Tabs.Content value="tournaments">
-            <Box position="relative">
+            </Link>
+          ))}
+        </Grid>
+
+        <SectionHeading>The Grand Slams</SectionHeading>
+        <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr", lg: "repeat(4, 1fr)" }} gap={5}>
+          {GRAND_SLAMS.map((slam) => (
+            <Link key={slam.id} href={`${ROUTES.TOURNAMENT}/${slam.id}`}>
               <Flex
-                as="form"
-                boxShadow="lg"
-                borderRadius="full"
-                bg="white"
-                px={4}
-                py={2}
-                align="center"
+                direction="column"
+                justify="space-between"
+                gap={6}
+                bg="card"
+                borderWidth="1px"
+                borderColor="line"
+                borderRadius="2xl"
+                p={6}
+                h="100%"
+                _hover={{ borderColor: "ink.muted" }}
               >
-                <Input
-                  placeholder="Search tournaments..."
-                  variant="subtle"
-                  fontSize="lg"
-                  _placeholder={{ color: "gray.400" }}
-                  value={tournamentSearchQuery}
-                  onChange={(e) => setTournamentSearchQuery(e.target.value)}
-                  onFocus={() => tournamentSearchQuery && setShowTournamentSuggestions(true)}
-                  onBlur={() =>
-                    setTimeout(() => setShowTournamentSuggestions(false), 200)
-                  }
-                />
-              </Flex>
-              {showTournamentSuggestions && tournamentSearchResults.length > 0 && (
-                <Box
-                  position="absolute"
-                  top="100%"
-                  left={4}
-                  right={4}
-                  bg="white"
-                  boxShadow="lg"
-                  borderRadius="md"
-                  zIndex={10}
-                  maxH="300px"
-                  overflowY="auto"
-                >
-                  {tournamentSearchResults.map((tournament) => (
-                    <Box
-                      key={tournament.id}
-                      px={4}
-                      py={3}
-                      cursor="pointer"
-                      _hover={{ bg: "gray.100" }}
-                      borderBottom="1px solid"
-                      borderColor="gray.200"
-                      onClick={() => handleTournamentSelect(tournament.id)}
-                    >
-                      <Box fontWeight="medium">{tournament.name}</Box>
-                    </Box>
-                  ))}
+                <Text fontFamily="heading" fontWeight="bold" fontSize="2xl" color="ink">
+                  {slam.name}
+                </Text>
+                <Box>
+                  <SurfaceBadge surface={slam.surface} />
                 </Box>
-              )}
-            </Box>
-          </Tabs.Content>
-        </Tabs.Root>
-      </Box>
-    </Center>
+              </Flex>
+            </Link>
+          ))}
+        </Grid>
+      </Container>
+    </>
   );
 }

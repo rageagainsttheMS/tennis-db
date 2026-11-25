@@ -13,17 +13,19 @@ test("home page is public and shows the search", async ({ page }) => {
   await page.goto("/");
 
   await expect(page).toHaveURL("/");
-  await expect(page.getByRole("heading", { name: "Search the ultimate tennis database" })).toBeVisible();
-  await expect(page.getByPlaceholder("Search players...")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Every player\.\s*Every tournament\.\s*One search\./ })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Search players" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Wimbledon/ })).toHaveAttribute("href", "/tournament/wimbledon");
+  await expect(page.getByRole("link", { name: /Clay Explore/ })).toHaveAttribute("href", "/tournaments?surface=clay");
 });
 
-test("search tabs switch between players and tournaments", async ({ page }) => {
+test("search switches between players and tournaments", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("tab", { name: "Tournaments" }).click();
+  await page.getByRole("radio", { name: "Tournaments" }).click();
 
-  await expect(page.getByPlaceholder("Search tournaments...")).toBeVisible();
-  await expect(page.getByPlaceholder("Search players...")).toBeHidden();
+  await expect(page.getByRole("textbox", { name: "Search tournaments" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Search players" })).toBeHidden();
 });
 
 test("sign-in page offers Google sign-in", async ({ page }) => {

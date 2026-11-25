@@ -1,249 +1,177 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { Box, Button, Flex, Grid, GridItem, Heading, Image, Input, NativeSelect, Tabs, Text, Textarea } from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, Heading, Image, Tabs, Text } from "@chakra-ui/react";
+import { LuPencil } from "react-icons/lu";
 import type { MatchWithPlayers, Player } from "@/types";
-import { ADMINROLE, PLAYER_BACKHAND, PLAYER_HAND } from "@/types/constants";
-import { updatePlayer } from "@/lib/actions/player.actions";
-import { useImageUpload } from "@/lib/hooks/useImageUpload";
+import { ADMINROLE } from "@/types/constants";
 import { latestRank, winLoss } from "@/lib/stats/match-stats";
-import { ageFromBirthDate, displayName, formatBackhand, formatHand, formatMatchDate, toDateInputValue } from "@/lib/utils/utils";
-import MatchesTable from "./MatchesTable";
-import { ImageUpload } from "./shared/ImageUpload";
-import { toaster } from "./toaster";
+import { winRate } from "@/lib/stats/player-summary";
+import { ageFromBirthDate, displayName, formatHand, formatMatchDate } from "@/lib/utils/utils";
+import { Card, Container, Eyebrow, Hero, HeroStat } from "./shared/Layout";
+import { PlayerAvatar, useStoredImage } from "./shared/PlayerAvatar";
+import PlayerBioEditor from "./player/PlayerBioEditor";
+import PlayerMatches from "./player/PlayerMatches";
+import PlayerOverview from "./player/PlayerOverview";
 
-type BioForm = {
-  fullName: string;
-  nickName: string;
-  hand: string;
-  backHand: string;
-  country: string;
-  birthPlace: string;
-  turnedPro: string;
-  birthDate: string;
-  profile: string;
-  image: string;
-};
+type Tab = "overview" | "matches" | "profile";
 
-function toForm(player: Player): BioForm {
-  return {
-    fullName: player.fullName ?? "",
-    nickName: player.nickName ?? "",
-    hand: player.hand ?? "",
-    backHand: player.backHand ?? "",
-    country: player.country ?? "",
-    birthPlace: player.birthPlace ?? "",
-    turnedPro: player.turnedPro ?? "",
-    birthDate: toDateInputValue(player.birthDate),
-    profile: player.profile ?? "",
-    image: player.image ?? "",
-  };
-}
-
-const TEXT_FIELDS: { name: keyof BioForm; label: string; placeholder?: string; type?: "date" }[] = [
-  { name: "fullName", label: "Full name", placeholder: "e.g. Carlos Alcaraz" },
-  { name: "nickName", label: "Nicknames", placeholder: "Comma-separated, e.g. Carlitos, Charly" },
-  { name: "country", label: "Country" },
-  { name: "birthPlace", label: "Birth place" },
-  { name: "turnedPro", label: "Turned pro", placeholder: "Year, e.g. 2018" },
-  { name: "birthDate", label: "Birth date", type: "date" },
-];
-
-const Detail = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <GridItem bg="gray.50" p={3} borderRadius="md">
-    <Text fontWeight="bold">{label}</Text>
-    <Text>{value || "-"}</Text>
-  </GridItem>
-);
+const TAB_STYLE = {
+  color: "hero.muted",
+  fontWeight: "medium",
+  fontSize: "md",
+  px: { base: 3, md: 6 },
+  py: 4,
+  h: "auto",
+  borderRadius: 0,
+  borderBottomWidth: "3px",
+  borderColor: "transparent",
+  _selected: { color: "hero.text", fontWeight: "semibold", borderColor: "ball.500" },
+  _hover: { color: "hero.text" },
+} as const;
 
 const PlayerProfile = ({ player, matches }: { player: Player; matches: MatchWithPlayers[] }) => {
   const { data: session } = useSession();
-  const router = useRouter();
   const isAdmin = session?.user?.role === ADMINROLE;
-  const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState<BioForm>(() => toForm(player));
-  const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState<Tab>("overview");
+  const [editing, setEditing] = useState(false);
+  const photo = useStoredImage(player.image);
 
-  const { getPresignedUrl } = useImageUpload();
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-  useEffect(() => {
-    if (!player.image) return;
-    getPresignedUrl(player.image)
-      .then(setImageSrc)
-      .catch((error) => console.error("Failed to get image URL:", error));
-  }, [player.image, getPresignedUrl]);
-
+  const name = displayName(player);
   const rank = latestRank(matches, player.id);
   const record = winLoss(matches, player.id);
-  const name = displayName(player);
+  const rate = winRate(record);
+  const firstSeason = matches.length ? Math.min(...matches.map((match) => match.season)) : null;
+  const age = ageFromBirthDate(player.birthDate);
+  const eyebrow = [player.country, formatHand(player.hand)].filter(Boolean).join(" · ");
+  const compact = tab !== "overview";
 
-  const update = (field: keyof BioForm, value: string) => setForm((prev) => ({ ...prev, [field]: value }));
-
-  const handleSave = async () => {
-    setSaving(true);
-    const result = await updatePlayer(player.id, form);
-    setSaving(false);
-    toaster.create({ title: result.success ? "Saved" : "Error", description: result.message, duration: result.success ? 2000 : 5000 });
-    if (result.success) {
-      setEditMode(false);
-      router.refresh();
-    }
-  };
-
-  const handleCancel = () => {
-    setForm(toForm(player));
-    setEditMode(false);
+  const startEditing = () => {
+    setEditing(true);
+    setTab("overview");
   };
 
   return (
-    <Box mx="auto" mt={10} maxW="1200px" px={4}>
-      <Flex justify="space-between" align="center" mb={2} gap={4} wrap="wrap">
-        <Box>
-          <Heading as="h1" size="4xl">
-            {name}
-          </Heading>
-          {player.fullName && (
-            <Text color="gray.500" fontSize="sm">
-              Listed as {player.name}
-            </Text>
-          )}
-        </Box>
-        {isAdmin && (
-          <Flex gap={2}>
-            {editMode ? (
-              <>
-                <Button colorPalette="green" size="sm" onClick={handleSave} loading={saving}>
-                  Save
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <Button colorPalette="blue" size="sm" onClick={() => setEditMode(true)}>
-                Edit bio
+    <Tabs.Root value={tab} onValueChange={(details) => setTab(details.value as Tab)} variant="plain" lazyMount>
+      <Hero>
+        <Container pt={{ base: 8, md: compact ? 8 : 12 }}>
+          <Flex align="center" gap={{ base: 4, md: 8 }} mb={compact ? 6 : { base: 8, md: 10 }}>
+            <PlayerAvatar
+              name={name}
+              image={player.image}
+              size={compact ? { base: "64px", md: "104px" } : { base: "88px", md: "200px" }}
+              variant="hero"
+            />
+            <Box flex="1" minW={0}>
+              {!compact && eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+              <Heading
+                as="h1"
+                fontFamily="heading"
+                fontWeight="bold"
+                fontSize={compact ? { base: "3xl", md: "5xl" } : { base: "4xl", md: "7xl" }}
+                lineHeight="1.05"
+                letterSpacing="-0.01em"
+                mt={compact ? 0 : 2}
+              >
+                {name}
+              </Heading>
+              {compact ? (
+                <Flex gap={{ base: 2, md: 6 }} mt={2} color="hero.muted" fontSize={{ base: "sm", md: "md" }} wrap="wrap">
+                  {rank && (
+                    <Text>
+                      Ranking{" "}
+                      <Text as="span" color="ball.500" fontWeight="bold">
+                        {rank.rank}
+                      </Text>{" "}
+                      · {formatMatchDate(rank.asOf)}
+                    </Text>
+                  )}
+                  {firstSeason && (
+                    <Text>
+                      Record since {firstSeason}{" "}
+                      <Text as="span" color="hero.text" fontWeight="bold">
+                        {record.wins}–{record.losses}
+                      </Text>
+                    </Text>
+                  )}
+                  {player.fullName && <Text>Listed as {player.name}</Text>}
+                </Flex>
+              ) : (
+                player.fullName && (
+                  <Text color="hero.muted" fontSize={{ base: "md", md: "lg" }} mt={2}>
+                    Listed as {player.name}
+                  </Text>
+                )
+              )}
+            </Box>
+            {isAdmin && !editing && (
+              <Button
+                onClick={startEditing}
+                variant="outline"
+                color="hero.text"
+                borderColor="whiteAlpha.400"
+                borderRadius="xl"
+                size={{ base: "sm", md: "lg" }}
+                _hover={{ bg: "court.800" }}
+                flexShrink={0}
+                alignSelf={{ base: "flex-start", md: "center" }}
+              >
+                <LuPencil /> Edit bio
               </Button>
             )}
           </Flex>
-        )}
-      </Flex>
 
-      <Flex gap={6} mb={6} color="gray.700" wrap="wrap">
-        <Text>
-          <b>Ranking:</b> {rank ? `${rank.rank} (as of ${formatMatchDate(rank.asOf)})` : "-"}
-        </Text>
-        <Text>
-          <b>Record since 2021:</b> {record.wins}–{record.losses}
-        </Text>
-      </Flex>
-
-      <Tabs.Root defaultValue={editMode ? "overview" : "matches"} mb={8}>
-        <Tabs.List>
-          <Tabs.Trigger value="matches">Matches</Tabs.Trigger>
-          <Tabs.Trigger value="overview">Overview</Tabs.Trigger>
-          <Tabs.Trigger value="profile">Profile</Tabs.Trigger>
-        </Tabs.List>
-
-        <Tabs.Content value="matches">
-          <MatchesTable matches={matches} playerId={player.id} />
-        </Tabs.Content>
-
-        <Tabs.Content value="overview">
-          <Flex direction={{ base: "column", md: "row" }} gap={6} mb={6}>
-            {editMode ? (
-              <Box>
-                <Text fontWeight="bold" mb={2}>
-                  Player image
-                </Text>
-                <ImageUpload folder="players" currentImage={form.image} onImageUploaded={(key) => update("image", key)} />
-              </Box>
-            ) : imageSrc ? (
-              <Image
-                src={imageSrc}
-                alt={`${name} profile picture`}
-                boxSize={{ base: "200px", md: "250px" }}
-                objectFit="cover"
-                borderRadius="lg"
-                border="2px solid"
-                borderColor="gray.200"
-                shadow="md"
-              />
-            ) : null}
-          </Flex>
-
-          <Heading as="h2" size="md" mb={3}>
-            Personal details
-          </Heading>
-          {editMode ? (
-            <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} mb={8}>
-              {TEXT_FIELDS.map(({ name: field, label, placeholder, type }) => (
-                <GridItem key={field}>
-                  <Text fontWeight="bold" mb={1}>
-                    {label}
-                  </Text>
-                  <Input size="sm" type={type} value={form[field]} placeholder={placeholder} onChange={(e) => update(field, e.target.value)} />
-                </GridItem>
-              ))}
-              <GridItem>
-                <Text fontWeight="bold" mb={1}>
-                  Plays
-                </Text>
-                <NativeSelect.Root size="sm">
-                  <NativeSelect.Field aria-label="Plays" value={form.hand} onChange={(e) => update("hand", e.currentTarget.value)}>
-                    <option value="">Not entered</option>
-                    {PLAYER_HAND.map((hand) => (
-                      <option key={hand.ID} value={hand.ID}>
-                        {hand.TEXT}
-                      </option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
-              </GridItem>
-              <GridItem>
-                <Text fontWeight="bold" mb={1}>
-                  Backhand
-                </Text>
-                <NativeSelect.Root size="sm">
-                  <NativeSelect.Field aria-label="Backhand" value={form.backHand} onChange={(e) => update("backHand", e.currentTarget.value)}>
-                    <option value="">Not entered</option>
-                    {PLAYER_BACKHAND.map((backHand) => (
-                      <option key={backHand.ID} value={backHand.ID}>
-                        {backHand.TEXT}
-                      </option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
-              </GridItem>
-            </Grid>
-          ) : (
-            <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} mb={8}>
-              <Detail label="Country" value={player.country} />
-              <Detail label="Age" value={ageFromBirthDate(player.birthDate)} />
-              <Detail label="Plays" value={player.hand ? formatHand(player.hand) : null} />
-              <Detail label="Backhand" value={player.backHand ? formatBackhand(player.backHand) : null} />
-              <Detail label="Nicknames" value={player.nickName} />
-              <Detail label="Birth date" value={player.birthDate ? formatMatchDate(player.birthDate) : null} />
-              <Detail label="Birth place" value={player.birthPlace} />
-              <Detail label="Turned pro" value={player.turnedPro} />
+          {!compact && (
+            <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(4, 1fr)" }} gap={{ base: 3, md: 4 }} mb={{ base: 6, md: 10 }}>
+              <HeroStat label="Ranking" value={rank?.rank ?? "—"} caption={rank ? `as of ${formatMatchDate(rank.asOf)}` : "no ranking in the data"} accent />
+              <HeroStat label="Win–loss" value={`${record.wins}–${record.losses}`} caption={firstSeason ? `since ${firstSeason}` : "no matches yet"} />
+              <HeroStat label="Win rate" value={rate === null ? "—" : `${rate}%`} caption="of decided matches" />
+              {player.turnedPro ? (
+                <HeroStat label="Turned pro" value={player.turnedPro} caption={age !== null ? `Age ${age}` : undefined} />
+              ) : (
+                <HeroStat label="Age" value={age ?? "—"} caption={age === null ? "not entered" : undefined} />
+              )}
             </Grid>
           )}
-        </Tabs.Content>
 
-        <Tabs.Content value="profile">
-          {editMode ? (
-            <Textarea rows={10} value={form.profile} onChange={(e) => update("profile", e.target.value)} />
+          <Tabs.List gap={{ base: 0, md: 2 }} borderBottomWidth={0}>
+            <Tabs.Trigger value="overview" {...TAB_STYLE}>
+              Overview
+            </Tabs.Trigger>
+            <Tabs.Trigger value="matches" {...TAB_STYLE}>
+              Matches
+            </Tabs.Trigger>
+            <Tabs.Trigger value="profile" {...TAB_STYLE}>
+              Profile
+            </Tabs.Trigger>
+          </Tabs.List>
+        </Container>
+      </Hero>
+
+      <Container pt={{ base: 8, md: 12 }}>
+        <Tabs.Content value="overview" p={0}>
+          {editing ? (
+            <PlayerBioEditor player={player} onDone={() => setEditing(false)} />
           ) : (
-            <Text fontSize="md" color="gray.600" whiteSpace="pre-wrap">
-              {player.profile || "No profile has been written for this player yet."}
-            </Text>
+            <PlayerOverview player={player} matches={matches} onSeeMatches={() => setTab("matches")} />
           )}
         </Tabs.Content>
-      </Tabs.Root>
-    </Box>
+        <Tabs.Content value="matches" p={0}>
+          <PlayerMatches matches={matches} playerId={player.id} />
+        </Tabs.Content>
+        <Tabs.Content value="profile" p={0}>
+          <Card p={{ base: 5, md: 8 }}>
+            <Flex direction={{ base: "column", md: "row" }} gap={8}>
+              {photo && <Image src={photo} alt={name} boxSize={{ base: "200px", md: "260px" }} objectFit="cover" borderRadius="xl" flexShrink={0} />}
+              <Text fontSize="lg" lineHeight="1.7" color={player.profile ? "ink" : "ink.muted"} whiteSpace="pre-wrap">
+                {player.profile || "No profile has been written for this player yet."}
+              </Text>
+            </Flex>
+          </Card>
+        </Tabs.Content>
+      </Container>
+    </Tabs.Root>
   );
 };
 
