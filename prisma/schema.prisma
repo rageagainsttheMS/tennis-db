@@ -72,7 +72,8 @@ model Player {
   country    String?
   birthPlace String?
   turnedPro  String?
-  age        String?
+  /// Entered by an admin. The age shown on the profile is worked out from this.
+  birthDate  DateTime? @db.Date
   profile    String?
   image      String?
 

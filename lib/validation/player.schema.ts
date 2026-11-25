@@ -15,6 +15,30 @@ const optionalEnum = <T extends Record<string, string>>(values: T, message: stri
   z.preprocess((value) => (value === "" || value === undefined ? null : value), z.enum(values, { error: message }).nullable());
 
 /**
+ * An optional birth date from an `<input type="date">` ("YYYY-MM-DD"), stored as midnight UTC.
+ * An empty value means "not entered". Must be a real calendar date, after 1900 and not in the future.
+ */
+const optionalBirthDate = z.preprocess(
+  (value) => (value === "" || value === undefined ? null : value),
+  z
+    .string({ error: "Birth date must be a date." })
+    .regex(/^\d{4}-\d{2}-\d{2}$/, { error: "Birth date must be a date." })
+    .transform((value, ctx) => {
+      const date = new Date(`${value}T00:00:00Z`);
+      if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+        ctx.addIssue({ code: "custom", message: "Birth date must be a date." });
+        return z.NEVER;
+      }
+      if (date.getUTCFullYear() < 1900 || date.getTime() > Date.now()) {
+        ctx.addIssue({ code: "custom", message: "Birth date must be after 1900 and not in the future." });
+        return z.NEVER;
+      }
+      return date;
+    })
+    .nullable(),
+);
+
+/**
  * Fields an admin may set on a player. Players are created by the seed loader, so the source's
  * ID and name are never taken from the client: unknown keys such as `sourceId`, `name` and `id`
  * are stripped. Server Actions accept any JSON from anyone, so this is the real contract.
@@ -27,7 +51,7 @@ export const playerBioSchema = z.object({
   country: optionalText(80),
   birthPlace: optionalText(120),
   turnedPro: optionalText(20),
-  age: optionalText(20),
+  birthDate: optionalBirthDate,
   profile: optionalText(10_000),
   image: optionalText(512),
 });

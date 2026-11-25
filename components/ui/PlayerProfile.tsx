@@ -9,7 +9,7 @@ import { ADMINROLE, PLAYER_BACKHAND, PLAYER_HAND } from "@/types/constants";
 import { updatePlayer } from "@/lib/actions/player.actions";
 import { useImageUpload } from "@/lib/hooks/useImageUpload";
 import { latestRank, winLoss } from "@/lib/stats/match-stats";
-import { displayName, formatBackhand, formatHand, formatMatchDate } from "@/lib/utils/utils";
+import { ageFromBirthDate, displayName, formatBackhand, formatHand, formatMatchDate, toDateInputValue } from "@/lib/utils/utils";
 import MatchesTable from "./MatchesTable";
 import { ImageUpload } from "./shared/ImageUpload";
 import { toaster } from "./toaster";
@@ -22,7 +22,7 @@ type BioForm = {
   country: string;
   birthPlace: string;
   turnedPro: string;
-  age: string;
+  birthDate: string;
   profile: string;
   image: string;
 };
@@ -36,19 +36,19 @@ function toForm(player: Player): BioForm {
     country: player.country ?? "",
     birthPlace: player.birthPlace ?? "",
     turnedPro: player.turnedPro ?? "",
-    age: player.age ?? "",
+    birthDate: toDateInputValue(player.birthDate),
     profile: player.profile ?? "",
     image: player.image ?? "",
   };
 }
 
-const TEXT_FIELDS: { name: keyof BioForm; label: string; placeholder?: string }[] = [
+const TEXT_FIELDS: { name: keyof BioForm; label: string; placeholder?: string; type?: "date" }[] = [
   { name: "fullName", label: "Full name", placeholder: "e.g. Carlos Alcaraz" },
-  { name: "nickName", label: "Nickname" },
+  { name: "nickName", label: "Nicknames", placeholder: "Comma-separated, e.g. Carlitos, Charly" },
   { name: "country", label: "Country" },
   { name: "birthPlace", label: "Birth place" },
   { name: "turnedPro", label: "Turned pro", placeholder: "Year, e.g. 2018" },
-  { name: "age", label: "Age" },
+  { name: "birthDate", label: "Birth date", type: "date" },
 ];
 
 const Detail = ({ label, value }: { label: string; value: React.ReactNode }) => (
@@ -178,12 +178,12 @@ const PlayerProfile = ({ player, matches }: { player: Player; matches: MatchWith
           </Heading>
           {editMode ? (
             <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} mb={8}>
-              {TEXT_FIELDS.map(({ name: field, label, placeholder }) => (
+              {TEXT_FIELDS.map(({ name: field, label, placeholder, type }) => (
                 <GridItem key={field}>
                   <Text fontWeight="bold" mb={1}>
                     {label}
                   </Text>
-                  <Input size="sm" value={form[field]} placeholder={placeholder} onChange={(e) => update(field, e.target.value)} />
+                  <Input size="sm" type={type} value={form[field]} placeholder={placeholder} onChange={(e) => update(field, e.target.value)} />
                 </GridItem>
               ))}
               <GridItem>
@@ -222,10 +222,11 @@ const PlayerProfile = ({ player, matches }: { player: Player; matches: MatchWith
           ) : (
             <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} mb={8}>
               <Detail label="Country" value={player.country} />
-              <Detail label="Age" value={player.age} />
+              <Detail label="Age" value={ageFromBirthDate(player.birthDate)} />
               <Detail label="Plays" value={player.hand ? formatHand(player.hand) : null} />
               <Detail label="Backhand" value={player.backHand ? formatBackhand(player.backHand) : null} />
-              <Detail label="Nickname" value={player.nickName} />
+              <Detail label="Nicknames" value={player.nickName} />
+              <Detail label="Birth date" value={player.birthDate ? formatMatchDate(player.birthDate) : null} />
               <Detail label="Birth place" value={player.birthPlace} />
               <Detail label="Turned pro" value={player.turnedPro} />
             </Grid>

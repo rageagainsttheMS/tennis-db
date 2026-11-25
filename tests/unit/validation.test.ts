@@ -32,7 +32,7 @@ describe("playerBioSchema", () => {
         country: null,
         birthPlace: null,
         turnedPro: null,
-        age: null,
+        birthDate: null,
         profile: null,
         image: null,
       },
@@ -44,6 +44,22 @@ describe("playerBioSchema", () => {
     [{ backHand: "THREEHANDED" }, "Invalid backhand."],
   ])("rejects %o with %s", (override, message) => {
     expect(parseInput(playerBioSchema, makeBioInput(override))).toEqual({ error: message });
+  });
+
+  it("parses a birth date to midnight UTC", () => {
+    const result = parseInput(playerBioSchema, makeBioInput({ birthDate: "2003-05-05" }));
+
+    expect(result).toEqual({ data: expect.objectContaining({ birthDate: new Date("2003-05-05T00:00:00Z") }) });
+  });
+
+  it.each([
+    ["05/05/2003", "Birth date must be a date."],
+    ["2003-02-30", "Birth date must be a date."],
+    [20030505, "Birth date must be a date."],
+    ["1899-12-31", "Birth date must be after 1900 and not in the future."],
+    ["2999-01-01", "Birth date must be after 1900 and not in the future."],
+  ])("rejects the birth date %o", (birthDate, message) => {
+    expect(parseInput(playerBioSchema, makeBioInput({ birthDate }))).toEqual({ error: message });
   });
 
   it("rejects over-long text and non-object input", () => {
