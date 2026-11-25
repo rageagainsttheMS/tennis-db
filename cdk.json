@@ -3,5 +3,8 @@
   "watch": {
     "include": ["src/**"],
     "exclude": ["node_modules", "cdk.out"]
+  },
+  "context": {
+    "imageUploadOrigins": ["http://localhost:3000", "https://d2t2gio7o197fi.cloudfront.net"]
   }
 }

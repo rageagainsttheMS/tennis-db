@@ -17,7 +17,20 @@ import {
  * bucket isn't replaced. It's separate from the stack so tests can check it without a
  * Next.js build.
  */
-export function createImagesBucket(scope: Construct, id: string): Bucket {
+export const DEFAULT_UPLOAD_ORIGINS = ["http://localhost:3000"];
+
+/**
+ * The browser PUTs images straight to S3, so every origin the site is served from must be
+ * listed here, or the CORS preflight fails and uploads show "Upload failed".
+ * Exact origins only: a wildcard would let any site use a leaked presigned URL from a browser.
+ */
+export function createImagesBucket(scope: Construct, id: string, allowedOrigins: string[] = DEFAULT_UPLOAD_ORIGINS): Bucket {
+  for (const origin of allowedOrigins) {
+    if (!/^https?:\/\/[^/*\s]+$/.test(origin)) {
+      throw new Error(`Invalid image upload origin "${origin}": use a scheme and host with no path or wildcard, e.g. https://example.com`);
+    }
+  }
+
   // No fixed bucketName: CloudFormation generates a unique one, so a bucket left behind by an
   // earlier stack can't block a fresh deploy. The app reads it from AWS_S3_BUCKET_NAME.
   return new Bucket(scope, id, {
@@ -29,7 +42,7 @@ export function createImagesBucket(scope: Construct, id: string): Bucket {
     autoDeleteObjects: true, // Remove for production
     cors: [{
       allowedMethods: [HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST],
-      allowedOrigins: ["http://localhost:3000"], // Your local dev server
+      allowedOrigins,
       allowedHeaders: ["*"],
     }],
   });
